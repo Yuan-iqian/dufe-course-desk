@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>东财课历</title>
+  <link rel="icon" href="../assets/app.png" type="image/png">
+  <link rel="stylesheet" href="../vendor/bootstrap.min.css">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="today.css">
+  <link rel="stylesheet" href="timetable.css">
+  <link rel="stylesheet" href="campus.css">
+  <link rel="stylesheet" href="workspace.css">
+  <link rel="stylesheet" href="theme.css">
+  <link rel="stylesheet" href="campus-hero.css">
+  <link rel="stylesheet" href="app-background.css">
+  <link rel="stylesheet" href="startup-intro.css">
+  <link rel="stylesheet" href="campus-card.css">
+  <script src="theme.js"></script>
+</head>
+<body>
+  <div id="app-background" aria-hidden="true"><img id="app-background-photo" class="app-background-image" src="../assets/dufe-campus.jpg" alt="" decoding="async"></div>
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="brand"><span class="brand-mark"><img src="../assets/app.png" width="40" height="40" alt=""></span><h1>东财课历</h1><span id="demo-badge" class="demo-badge" hidden>模拟演示</span></div>
+      <div class="header-actions">
+        <button id="support-open" class="btn btn-light" type="button" title="查看赞赏码" aria-label="查看赞赏码" aria-haspopup="dialog" aria-controls="support-dialog"><span class="support-icon" aria-hidden="true"></span></button>
+        <button id="theme-open" class="btn btn-light" type="button" aria-label="切换主题" aria-haspopup="dialog"><img src="../assets/palette.svg" width="20" height="20" alt=""><span>主题</span></button>
+        <button id="login" class="btn btn-light"><img src="../assets/log-in.svg" alt=""><span id="login-label">登录学校</span></button>
+      </div>
+    </header>
+    <div class="app-layout">
+      <nav class="view-tabs" aria-label="事务分类">
+        <button id="tab-today" class="view-tab selected" aria-pressed="true"><img src="../assets/layout-dashboard.svg" width="20" height="20" alt="" aria-hidden="true"><span>今天</span></button>
+        <button id="tab-timetable" class="view-tab" aria-pressed="false"><img src="../assets/calendar-days.svg" width="20" height="20" alt="" aria-hidden="true"><span>课程表</span></button>
+        <button id="tab-homework" class="view-tab" aria-pressed="false"><img src="../assets/book-open.svg" width="20" height="20" alt="" aria-hidden="true"><span>作业汇总</span></button>
+        <button id="tab-signin" class="view-tab" aria-pressed="false"><img src="../assets/bell-ring.svg" width="20" height="20" alt="" aria-hidden="true"><span>课堂签到</span></button>
+        <button id="tab-campus" class="view-tab" aria-pressed="false"><img src="../assets/megaphone.svg" width="20" height="20" alt="" aria-hidden="true"><span>校园通知</span></button>
+      </nav>
+      <div class="app-content">
+        <main>
+          <div id="error-banner" class="error-banner" role="alert" hidden><img src="../assets/circle-alert.svg" alt=""><span id="error-text"></span></div>
+          <div id="notice" class="notice" role="status" hidden></div>
+          <section id="today-panel" aria-labelledby="today-heading">
+            <div class="today-heading campus-hero" data-scene="gate">
+              <div class="campus-hero-media" aria-hidden="true"><img class="campus-hero-image" data-scene="gate" src="../assets/dufe-campus.jpg" alt="" width="1280" height="805" decoding="async"></div>
+              <div class="campus-hero-title">
+                <p class="campus-hero-school">东北财经大学<span>博学济世</span></p>
+                <h2 id="today-heading">今天</h2>
+                <p id="today-date" class="muted"></p>
+              </div>
+              <div class="campus-hero-actions">
+                <button id="today-refresh" type="button" class="btn btn-light"><img src="../assets/refresh-cw.svg" alt="">同步课表与作业</button>
+                <button id="campus-scene-next" type="button" class="btn btn-light" hidden>换一景<img src="../assets/chevron-right.svg" alt=""></button>
+              </div>
+              <p class="campus-hero-caption" aria-live="polite">校门与之远楼 · 实景</p>
+            </div>
+            <button id="campus-card-open" class="campus-card-shortcut" type="button" aria-label="打开我的校园码">
+              <img src="../assets/qr-code.svg" alt="">
+              <span><strong>我的校园码</strong><small>打开学校官方页面出示入校码</small></span>
+              <img src="../assets/chevron-right.svg" alt="">
+            </button>
+            <section id="today-urgent" class="today-urgent" aria-labelledby="today-urgent-heading" hidden>
+              <h3 id="today-urgent-heading"><img src="../assets/clock-3.svg" width="20" height="20" alt="">优先处理</h3>
+              <ul id="today-urgent-list" class="today-deadlines"></ul>
+            </section>
+            <div class="today-top">
+              <section class="today-timetable" aria-label="当前与下一节课">
+                <div class="today-class-head">
+                  <h3><img src="../assets/calendar-days.svg" width="20" height="20" alt="">上课安排</h3>
+                  <button id="today-timetable-link" class="text-button" type="button">查看课表<img src="../assets/chevron-right.svg" width="16" height="16" alt=""></button>
+                </div>
+                <div id="today-current" class="today-lesson"></div>
+                <div id="today-next" class="today-lesson"></div>
+              </section>
+              <section class="today-monitor" aria-labelledby="today-monitor-heading">
+                <div class="today-monitor-head">
+                  <h3 id="today-monitor-heading"><img src="../assets/bell.svg" alt="">签到监控</h3>
+                  <span id="today-status" class="status-pill" role="status"><span class="status-dot"></span><span id="today-status-label">尚未同步</span></span>
+                </div>
+                <p id="today-monitor-target"></p>
+                <dl class="today-monitor-times">
+                  <div><dt>上次成功检查签到</dt><dd id="today-last-check">—</dd></div>
+                  <div><dt>下次检查</dt><dd id="today-next-check">—</dd></div>
+                </dl>
+                <div class="today-monitor-actions">
+                  <button id="today-monitor-toggle" type="button" class="btn btn-primary">开始监控</button>
+                  <button id="today-signin" type="button" class="btn btn-light">签到详情</button>
+                </div>
+              </section>
+            </div>
+            <section class="today-sync" aria-labelledby="today-sync-heading">
+              <h3 id="today-sync-heading">同步状态</h3>
+              <div id="today-sync-auth" class="today-sync-auth" hidden>
+                <p role="status">学校登录已失效</p>
+                <button id="today-relogin" type="button" class="btn btn-light">重新登录</button>
+              </div>
+              <div class="today-sync-grid">
+                <div class="today-sync-row" id="today-sync-schedule">
+                  <div><h4>课表</h4><p id="today-sync-schedule-time" class="muted"></p><p id="today-sync-schedule-status" class="muted today-sync-status" role="status" hidden></p></div>
+                  <button id="today-retry-schedule" type="button" class="btn btn-light" aria-label="重试同步课表" hidden>重试</button>
+                </div>
+                <div class="today-sync-row" id="today-sync-homework">
+                  <div><h4>作业</h4><p id="today-sync-homework-time" class="muted"></p><p id="today-sync-homework-status" class="muted today-sync-status" role="status" hidden></p></div>
+                  <button id="today-retry-homework" type="button" class="btn btn-light" aria-label="重试同步作业" hidden>重试</button>
+                </div>
+              </div>
+            </section>
+            <section class="today-agenda" aria-labelledby="today-agenda-heading">
+              <div class="today-agenda-head">
+                <div><h3 id="today-agenda-heading">未来 7 天</h3><p id="today-range" class="muted"></p></div>
+                <p id="today-agenda-count" class="muted"></p>
+              </div>
+              <div id="today-agenda-list"></div>
+            </section>
+          </section>
+          <section id="timetable-panel" aria-labelledby="timetable-heading" hidden>
+            <div class="timetable-heading">
+              <div><h2 id="timetable-heading">课程表</h2><p id="timetable-date" class="muted"></p></div>
+              <button id="timetable-sync" type="button" class="btn btn-light">同步课表</button>
+            </div>
+            <div class="timetable-controls">
+              <div class="timetable-switch" role="group" aria-label="课表范围">
+                <button id="timetable-week" type="button" aria-pressed="true">每周课表</button>
+                <button id="timetable-term" type="button" aria-pressed="false">总课表</button>
+              </div>
+              <p id="timetable-status" class="muted" role="status"></p>
+            </div>
+            <p id="timetable-error" class="field-error" role="alert" hidden></p>
+            <div id="timetable-week-picker" class="timetable-week-picker" hidden>
+              <button id="timetable-prev-week" type="button" class="btn btn-light">上一周</button>
+              <select id="timetable-week-number" class="form-select" aria-label="选择教学周"></select>
+              <button id="timetable-next-week" type="button" class="btn btn-light">下一周</button>
+              <button id="timetable-current-week" type="button" class="text-button">回本周</button>
+            </div>
+            <div id="timetable-week-content"></div>
+            <div id="timetable-term-content" hidden></div>
+          </section>
+          <section id="campus-panel" hidden aria-label="校园通知"></section>
+
+          <section id="homework-panel" aria-labelledby="homework-heading" hidden>
+            <div class="homework-heading"><div><h2 id="homework-heading">作业汇总</h2><p id="homework-summary" class="muted">登录学校后同步本学期作业</p></div><div class="homework-actions"><button id="homework-toggle" class="btn btn-primary">开始监控</button><button id="homework-refresh" class="btn btn-light"><img src="../assets/refresh-cw.svg" alt="">同步作业</button><button id="homework-school" class="btn btn-outline-secondary">学校作业页面</button></div></div>
+            <div class="homework-stats" aria-label="作业统计"><div><span>待提交</span><strong id="hw-pending">0</strong></div><div><span>24 小时内截止</span><strong id="hw-due">0</strong></div><div><span>已过期</span><strong id="hw-overdue">0</strong></div><div><span>已提交</span><strong id="hw-submitted">0</strong></div></div>
+            <div id="homework-error" class="error-banner" role="alert" hidden></div>
+            <div class="homework-filters"><div><label class="form-label" for="homework-course">课程</label><select id="homework-course" class="form-select"><option value="">全部课程</option></select></div><div><label class="form-label" for="homework-status">提交状态</label><select id="homework-status" class="form-select"><option value="all">全部状态</option><option value="pending">待提交</option><option value="due">24 小时内截止</option><option value="submitted">待批改</option><option value="graded">已批改</option><option value="overdue">已过期</option></select></div><div class="homework-search"><label class="form-label" for="homework-query">查找作业</label><input id="homework-query" class="form-control" type="search" placeholder="作业名称、课程或教师"></div><div><label class="form-label" for="homework-sort">排序</label><select id="homework-sort" class="form-select"><option value="priority">优先处理待提交</option><option value="deadline">截止时间从近到远</option><option value="recent">最近发现</option></select></div></div>
+            <div class="homework-meta"><span id="homework-sync" role="status">尚未同步</span><span id="homework-count"></span></div>
+            <div id="homework-list" class="homework-list"><p class="homework-empty">点击“登录学校”，使用学校账号同步作业</p></div>
+            <p class="homework-note">汇总学校作业列表中的全部课程 · 每 5 分钟同步 · 截止前 24 小时和 1 小时提醒</p>
+            <details class="homework-history"><summary>作业提醒记录</summary><div id="homework-history-list"></div></details>
+          </section>
+          <section id="demo-tools" class="demo-tools" aria-label="模拟场景" hidden><span>以下数据仅用于测试</span><button class="btn btn-light" data-scenario="new">模拟发起签到</button><button class="btn btn-light" data-scenario="ended">结束签到</button><button class="btn btn-light" data-scenario="offline">断网</button><button class="btn btn-light" data-scenario="expired">登录过期</button><button class="btn btn-light" data-scenario="empty">恢复正常</button></section>
+          <section id="signin-panel" aria-labelledby="signin-heading" hidden>
+            <div class="page-heading"><h2 id="signin-heading">课堂签到</h2></div>
+            <div class="workspace">
+            <div class="main-column">
+              <section class="monitor-panel" aria-labelledby="course-title">
+                <div class="monitor-top"><span id="status-pill" class="status-pill"><span class="status-dot"></span><span id="status-label">尚未开始监控</span></span><span id="today-label" class="muted"></span></div>
+                <h2 id="course-title">全部课程签到</h2>
+                <p id="lesson-label" class="lesson-line">登录后同步课表</p>
+                <div class="watch-status"><div class="watch-symbol"><img id="watch-icon" src="../assets/bell.svg" alt=""></div><div><h3 id="watch-title">先连接你的课堂</h3><p id="watch-description">在学校页面完成登录，再同步课表</p></div></div>
+                <div class="main-actions"><button id="toggle" class="btn btn-primary"><img id="toggle-icon" src="../assets/play.svg" alt=""><span id="toggle-label">开始监控</span></button><button id="open-school" class="btn btn-outline-secondary"><img src="../assets/external-link.svg" alt="">打开学校页面</button></div>
+                <div class="check-strip"><span>上次成功检查 <strong id="last-checked">尚未检查</strong></span><span id="next-check" aria-hidden="true"></span></div>
+              </section>
+              <section class="activity-section" aria-labelledby="activities-title"><div class="section-heading"><h2 id="activities-title">当前签到</h2><button id="refresh" class="btn btn-light"><img src="../assets/refresh-cw.svg" alt=""><span id="refresh-label">同步课表并检查</span></button></div><div id="activities" class="activity-list"><p class="empty-inline">登录并检查后显示签到活动</p></div></section>
+              <section class="history-section" aria-labelledby="history-title"><div class="section-heading"><h2 id="history-title">提醒记录</h2><span id="history-count" class="muted">0 条</span></div><div id="history"><div class="history-empty"><img src="../assets/bell-ring.svg" alt=""><p>新签到出现后，提醒会记录在这里</p></div></div></section>
+            </div>
+            <aside class="settings-panel" aria-labelledby="settings-title">
+              <div class="section-heading"><h2 id="settings-title">监控设置</h2><img src="../assets/settings-2.svg" class="icon" alt=""></div>
+              <form id="settings-form">
+                <label class="form-label" for="mode">监控课次</label><select id="mode" class="form-select"><option value="auto">跟随全部课程</option><option value="manual">手动指定课次</option></select>
+                <p id="mode-hint" class="field-hint">上课前 10 分钟至下课后 15 分钟检查</p>
+                <div id="lesson-field" hidden><label class="form-label" for="lesson">选择课次</label><select id="lesson" class="form-select"><option value="">请先同步课表</option></select></div>
+                <label class="form-label" for="interval">检查间隔</label><select id="interval" class="form-select"><option value="30">30 秒</option><option value="60">60 秒</option><option value="15">15 秒</option></select>
+                <div class="sound-row"><label for="sound">提醒声音</label><div class="form-check form-switch"><input id="sound" class="form-check-input" type="checkbox" role="switch" checked></div></div>
+                <button id="save" type="submit" class="btn btn-outline-secondary save-button">保存设置</button>
+                <p id="settings-error" class="field-error" role="alert" hidden></p>
+              </form>
+              <div class="settings-divider"></div>
+              <button id="test-notification" class="btn btn-light test-button"><img src="../assets/bell-ring.svg" alt="">测试提醒</button>
+              <button id="notification-settings" class="text-button">打开 Windows 通知设置<img src="../assets/arrow-up-right.svg" alt=""></button>
+              <details id="course-details"><summary>用链接指定课次</summary><form id="import-form"><label class="form-label" for="course-url">学校签到页面链接</label><input id="course-url" class="form-control" type="url" placeholder="https://ginkgostu.dufe.edu.cn/…" required><button id="import" type="submit" class="btn btn-outline-secondary">指定课次</button><p id="import-error" class="field-error" role="alert" hidden></p></form></details>
+              <div class="connection-box"><span class="status-dot"></span><div><strong id="connection-label">尚未连接学校</strong><span id="connection-detail">登录信息保留在本机</span></div></div>
+            </aside>
+            </div>
+          </section>
+        </main>
+        <footer>
+          <span>关闭窗口后在托盘继续运行 · 电脑休眠期间暂停检查</span>
+          <button id="quit" class="text-button">退出软件</button>
+        </footer>
+      </div>
+    </div>
+  </div>
+  <dialog id="theme-dialog" class="cp-dialog theme-dialog" aria-labelledby="theme-heading">
+    <div class="cp-dialog-head">
+      <h2 id="theme-heading">显示主题</h2>
+      <button id="theme-close" class="btn btn-light" type="button" autofocus>完成</button>
+    </div>
+    <fieldset id="theme-choices" class="theme-choices">
+      <legend>主题颜色</legend>
+      <label class="theme-option" data-choice="day">
+        <span class="theme-preview" aria-hidden="true"></span>
+        <span class="theme-option-name"><input name="theme" type="radio" value="day" checked>白天</span>
+      </label>
+      <label class="theme-option" data-choice="night">
+        <span class="theme-preview" aria-hidden="true"></span>
+        <span class="theme-option-name"><input name="theme" type="radio" value="night">黑夜</span>
+      </label>
+      <label class="theme-option" data-choice="beige">
+        <span class="theme-preview" aria-hidden="true"></span>
+        <span class="theme-option-name"><input name="theme" type="radio" value="beige">米色</span>
+      </label>
+      <label class="theme-option" data-choice="mist">
+        <span class="theme-preview" aria-hidden="true"></span>
+        <span class="theme-option-name"><input name="theme" type="radio" value="mist">雾蓝</span>
+      </label>
+      <label class="theme-option" data-choice="green">
+        <span class="theme-preview" aria-hidden="true"></span>
+        <span class="theme-option-name"><input name="theme" type="radio" value="green">浅绿</span>
+      </label>
+    </fieldset>
+    <fieldset id="background-choices" class="theme-choices background-choices">
+      <legend>背景图片</legend>
+      <label class="theme-option background-option">
+        <img class="background-preview" src="../assets/dufe-campus.jpg" alt="" loading="lazy" decoding="async">
+        <span class="theme-option-name"><input name="background" type="radio" value="gate" checked>校门与之远楼</span>
+      </label>
+      <label class="theme-option background-option">
+        <img class="background-preview" src="../assets/dufe-cherry.webp" alt="" loading="lazy" decoding="async">
+        <span class="theme-option-name"><input name="background" type="radio" value="cherry">樱花林</span>
+      </label>
+      <label class="theme-option background-option">
+        <img class="background-preview" src="../assets/dufe-aerial.webp" alt="" loading="lazy" decoding="async">
+        <span class="theme-option-name"><input name="background" type="radio" value="aerial">校园俯瞰</span>
+      </label>
+      <label class="theme-option background-option">
+        <img class="background-preview" src="../assets/dufe-ginkgo.webp" alt="" loading="lazy" decoding="async">
+        <span class="theme-option-name"><input name="background" type="radio" value="ginkgo">银杏路</span>
+      </label>
+      <label class="theme-option background-option">
+        <img class="background-preview" src="../assets/dufe-garden.webp" alt="" loading="lazy" decoding="async">
+        <span class="theme-option-name"><input name="background" type="radio" value="garden">莘子园</span>
+      </label>
+      <label class="theme-option background-option">
+        <img class="background-preview" src="../assets/dufe-snow.webp" alt="" loading="lazy" decoding="async">
+        <span class="theme-option-name"><input name="background" type="radio" value="snow">东财雪景</span>
+      </label>
+    </fieldset>
+  </dialog>
+  <dialog id="support-dialog" class="cp-dialog support-dialog" aria-labelledby="support-heading" aria-describedby="support-help">
+    <div class="cp-dialog-head">
+      <h2 id="support-heading">赞赏码</h2>
+      <button id="support-close" class="btn btn-light" type="button" autofocus>关闭</button>
+    </div>
+    <img class="support-code" src="../assets/support-code.png" width="1599" height="1599" alt="东财课历赞赏码，图片下方附有赞赏后参与 QQ 交流的说明">
+    <p id="support-help" class="muted">自愿扫码赞赏。用手机查看时，可截图后在微信「扫一扫」中从相册选取。</p>
+  </dialog>
+  <dialog id="startup-intro" class="startup-intro" aria-labelledby="startup-title" aria-describedby="startup-motto">
+    <div class="startup-visual" aria-hidden="true">
+      <img id="startup-campus-gate" src="../assets/dufe-campus.jpg" alt="" decoding="async">
+      <img id="startup-campus-cherry" src="../assets/dufe-cherry.webp" alt="" decoding="async">
+      <img id="startup-campus-aerial" src="../assets/dufe-aerial.webp" alt="" decoding="async">
+    </div>
+    <div class="startup-wordmark">
+      <h2 id="startup-title">东财课历</h2>
+      <p id="startup-motto">东北财经大学<span aria-hidden="true"> · </span>博学济世</p>
+    </div>
+    <button id="startup-skip" class="btn btn-light" type="button" autofocus>跳过</button>
+  </dialog>
+  <audio id="chime" src="../assets/chime.wav" preload="auto"></audio>
+  <script src="today.js"></script>
+  <script src="timetable.js"></script>
+  <script src="renderer.js"></script>
+  <script src="campus-service.js"></script>
+  <script src="campus.js"></script>
+  <script src="campus-scenes.js"></script>
+  <script src="startup-intro.js"></script>
+</body>
+</html>

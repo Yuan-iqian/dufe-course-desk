@@ -1,0 +1,10 @@
+{
+  "appId": "cn.dufe.coursedesk",
+  "appName": "东财课历",
+  "webDir": "www",
+  "server": { "androidScheme": "https" },
+  "android": { "allowMixedContent": false },
+  "plugins": {
+    "LocalNotifications": { "smallIcon": "ic_stat_bell", "iconColor": "#2563EB" }
+  }
+}

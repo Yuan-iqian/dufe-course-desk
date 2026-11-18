@@ -1,0 +1,10 @@
+.campus-card-shortcut{display:flex;align-items:center;gap:14px;width:100%;margin:0 0 24px;padding:16px 18px;text-align:left;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--ink);transition:background-color 80ms,border-color 80ms,transform 80ms}
+.campus-card-shortcut>img:first-child{width:24px;height:24px;flex:none}
+.campus-card-shortcut>img:last-child{width:20px;height:20px;margin-left:auto;flex:none}
+.campus-card-shortcut span{display:grid;gap:3px;min-width:0}
+.campus-card-shortcut strong{font-size:15px;font-weight:600}
+.campus-card-shortcut small{font-size:12px;color:var(--muted)}
+.campus-card-shortcut:hover{background:var(--surface);border-color:var(--blue)}
+.campus-card-shortcut:active{transform:scale(.99)}
+.campus-card-shortcut:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+.campus-card-shortcut:disabled{opacity:.55;cursor:wait}

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">东财课历</string>
+    <string name="title_activity_main">东财课历</string>
+    <string name="package_name">cn.dufe.coursedesk</string>
+    <string name="custom_url_scheme">cn.dufe.coursedesk</string>
+</resources>

@@ -1,0 +1,21 @@
+body { padding-top: env(safe-area-inset-top); }
+.app-shell { padding: 8px max(16px, env(safe-area-inset-right)) calc(84px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); animation: none; }
+.app-layout { display: block; }
+.app-content { padding-top: 0; }
+.app-header { margin-bottom: 16px; }
+.app-header .btn { min-height: 44px; padding: 8px 12px; }
+.view-tabs {
+  position: fixed; top: auto; bottom: 0; left: 0; right: 0; z-index: 5;
+  background: var(--panel); margin: 0;
+  padding: 6px max(8px, env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+  border-top: 1px solid var(--line); border-bottom: 0;
+  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px;
+}
+.view-tabs button { justify-content: center; flex-direction: column; gap: 4px; min-height: 52px; padding: 4px 0; font-size: clamp(12px, 3.2vw, 14px); }
+.view-tabs button img { width: 20px; height: 20px; }
+.btn, .text-button, summary, select, input { min-height: 44px; }
+.cp-card-meta { font-size: 12px; }
+.cp-identity { align-items: flex-start; gap: 10px; }
+.cp-dialog { max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 32px); }
+footer { margin-bottom: 12px; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }

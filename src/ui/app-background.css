@@ -1,0 +1,118 @@
+:root,
+.theme-option[data-choice="day"] .theme-preview {
+  --app-gradient-start: #f8fbff;
+  --app-gradient-end: #d9e8f9;
+  --backdrop-veil: 242 247 253;
+  --backdrop-photo-filter: saturate(.86);
+}
+
+:root[data-theme="night"],
+.theme-option[data-choice="night"] .theme-preview {
+  --app-gradient-start: #101925;
+  --app-gradient-end: #253953;
+  --backdrop-veil: 16 25 39;
+  --backdrop-photo-filter: saturate(.65) brightness(.68);
+}
+
+:root[data-theme="beige"],
+.theme-option[data-choice="beige"] .theme-preview {
+  --app-gradient-start: #fff8ed;
+  --app-gradient-end: #e7d0ae;
+  --backdrop-veil: 248 237 218;
+  --backdrop-photo-filter: sepia(.2) saturate(.88);
+}
+
+:root[data-theme="mist"],
+.theme-option[data-choice="mist"] .theme-preview {
+  --app-gradient-start: #f3f8ff;
+  --app-gradient-end: #becfe9;
+  --backdrop-veil: 225 237 251;
+  --backdrop-photo-filter: saturate(.76);
+}
+
+:root[data-theme="green"],
+.theme-option[data-choice="green"] .theme-preview {
+  --app-gradient-start: #f2f8ef;
+  --app-gradient-end: #c7dfca;
+  --backdrop-veil: 227 240 229;
+  --backdrop-photo-filter: saturate(.8);
+}
+
+body { isolation: isolate; }
+
+#app-background {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background-image: linear-gradient(135deg, var(--app-gradient-start), var(--page) 36%, var(--app-gradient-end));
+}
+
+#app-background::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  --backdrop-reading-edge: max(168px, calc((100vw - 1540px) / 2 + 182px));
+  background-image:
+    linear-gradient(90deg,
+      transparent var(--backdrop-reading-edge),
+      rgb(var(--backdrop-veil) / 63%) calc(var(--backdrop-reading-edge) + 45px),
+      transparent 84%),
+    linear-gradient(180deg,
+      rgb(var(--backdrop-veil) / 91%) 0%,
+      rgb(var(--backdrop-veil) / 79%) 31%,
+      rgb(var(--backdrop-veil) / 25%) 60%,
+      rgb(var(--backdrop-veil) / 9%) 100%);
+}
+
+.app-background-image {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: min(83vw, 1400px);
+  height: 100%;
+  object-fit: cover;
+  object-position: var(--backdrop-photo-position, 75% 60%);
+  filter: var(--backdrop-photo-filter);
+  -webkit-mask-image: linear-gradient(90deg, #000 16%, #000b 35%, #0003 66%, transparent 100%);
+  mask-image: linear-gradient(90deg, #000 16%, #000b 35%, #0003 66%, transparent 100%);
+}
+
+:root[data-background="cherry"] { --backdrop-photo-position: 68% 57%; }
+:root[data-background="aerial"] { --backdrop-photo-position: 62% 53%; }
+:root[data-background="ginkgo"] { --backdrop-photo-position: 70% 61%; }
+:root[data-background="garden"] { --backdrop-photo-position: 77% 55%; }
+:root[data-background="snow"] { --backdrop-photo-position: 62% 61%; }
+
+.settings-panel,
+.homework-list,
+.today-agenda-empty,
+.today-day .today-deadlines,
+.cp-auth,
+.cp-empty {
+  background-color: var(--panel);
+}
+
+.homework-list,
+.today-agenda-empty,
+.today-day .today-deadlines {
+  border-radius: var(--control-radius);
+}
+
+@media (max-width: 900px) {
+  .app-background-image {
+    inset: 0 0 auto;
+    width: 100%;
+    height: 100%;
+    -webkit-mask-image: linear-gradient(132deg, transparent 5%, #0007 43%, #000 100%);
+    mask-image: linear-gradient(132deg, transparent 5%, #0007 43%, #000 100%);
+  }
+
+  #app-background::after {
+    background-image: linear-gradient(180deg,
+      rgb(var(--backdrop-veil) / 94%) 0%,
+      rgb(var(--backdrop-veil) / 64%) 34%,
+      rgb(var(--backdrop-veil) / 59%) 65%,
+      rgb(var(--backdrop-veil) / 86%) 100%);
+  }
+}

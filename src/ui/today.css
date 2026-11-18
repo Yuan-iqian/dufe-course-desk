@@ -1,0 +1,142 @@
+.today-heading,
+.today-monitor-head,
+.today-agenda-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.today-heading { margin-bottom: 20px; }
+.today-heading h2 { font-size: 32px; line-height: 1.2; margin-bottom: 6px; }
+.today-heading .btn { gap: 7px; }
+.today-heading .btn img, .today-monitor h3 img { width: 16px; height: 16px; }
+.today-top { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 16px; }
+.today-timetable { background: var(--light-blue); border: 1px solid var(--accent-edge); border-radius: 14px; }
+.today-lesson { padding: 17px 22px; min-width: 0; }
+.today-lesson + .today-lesson { border-top: 1px solid var(--accent-edge); }
+.today-slot-label { font-size: 13px; color: var(--muted); font-weight: 600; }
+.today-lesson-link {
+  display: block;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 4px 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  text-align: left;
+  color: var(--ink);
+  font-size: 22px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.today-lesson-link:hover { color: var(--blue); }
+.today-slot-empty { font-size: 17px; font-weight: 600; margin-top: 9px; }
+.today-slot-meta { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.today-monitor { border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+.today-monitor h3, .today-agenda h3 { font-size: 17px; font-weight: 700; }
+.today-monitor h3 { display: flex; gap: 8px; align-items: center; white-space: nowrap; }
+.today-monitor .status-pill { border-radius: 7px; padding: 4px 9px; background: var(--surface); white-space: nowrap; }
+.today-monitor .today-status-error { color: var(--danger-text); background: var(--danger-bg); }
+.today-status-error .status-dot { background: var(--red); }
+#today-monitor-target { font-size: 14px; color: var(--muted); margin: 12px 0; overflow-wrap: anywhere; }
+.today-monitor-times { display: grid; grid-template-columns: 1.15fr 1fr; gap: 10px; margin: 0; padding: 12px 0; border-top: 1px solid var(--line); }
+.today-monitor-times dt { font-size: 12px; color: var(--muted); font-weight: 500; }
+.today-monitor-times dd { font-size: 13px; margin: 4px 0 0; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.today-monitor-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 7px; }
+.today-urgent, .today-sync {
+  border: 1px solid var(--line);
+  border-radius: var(--panel-radius);
+  background: var(--panel);
+}
+.today-urgent { margin-bottom: 16px; border-color: var(--danger-border); }
+.today-urgent h3, .today-sync h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  font-size: 16px;
+  font-weight: 700;
+  border-bottom: 1px solid var(--line);
+}
+.today-urgent h3 { color: var(--danger-text); border-bottom-color: var(--danger-border); }
+.today-urgent .today-deadline:last-child { border-bottom: 0; }
+.today-urgent .today-deadline-button {
+  grid-template-columns: 78px minmax(0, 1fr) auto;
+  border-radius: 6px;
+  padding-inline: 16px;
+}
+.today-urgent .today-deadline-button:focus-visible { outline-offset: -3px; }
+.today-urgent .today-deadline-button:hover { transform: none; }
+.today-urgent .today-deadline-button:active { transform: scale(.995); }
+.today-urgent .today-kind-urgent { color: var(--danger-text); background: var(--danger-bg); white-space: nowrap; }
+.today-sync { margin-top: 16px; }
+.today-sync-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.today-sync-row, .today-sync-auth {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  min-height: 62px;
+  padding: 8px 16px;
+}
+.today-sync-row + .today-sync-row { border-left: 1px solid var(--line); }
+.today-sync-row h4 { margin: 0; font-size: 14px; font-weight: 650; }
+.today-sync-row p { font-variant-numeric: tabular-nums; }
+.today-sync-row .btn, .today-sync-auth .btn { flex: none; padding: 6px 12px; font-size: 13px; }
+.today-sync-auth { background: var(--danger-bg); color: var(--danger-text); border-bottom: 1px solid var(--danger-border); }
+.today-sync-error { color: var(--danger-text); }
+.today-agenda { margin-top: 25px; }
+.today-agenda-head { margin-bottom: 10px; }
+.today-agenda-head h3 { margin-bottom: 4px; }
+.today-agenda-count { flex: none; }
+.today-day h4 { padding: 9px 12px; background: var(--surface); font-size: 13px; font-weight: 650; }
+.today-day + .today-day { margin-top: 12px; }
+.today-deadlines { margin: 0; padding: 0; list-style: none; }
+.today-deadline { border-bottom: 1px solid var(--line); animation: appear 160ms ease-out; }
+.today-deadline-button {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) auto;
+  width: 100%;
+  min-height: 56px;
+  gap: 12px;
+  align-items: center;
+  text-align: left;
+  padding: 8px 12px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+}
+.today-deadline-button:hover { background: var(--light-blue); }
+.today-deadline-button:active { transform: scale(.995); }
+.today-due-time { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 13px; }
+.today-deadline-copy { overflow-wrap: anywhere; }
+.today-deadline-copy strong, .today-deadline-copy small { display: block; }
+.today-deadline-copy strong { font-size: 14px; font-weight: 650; }
+.today-deadline-copy small { color: var(--muted); font-size: 12px; }
+.today-kind { font-size: 12px; padding: 2px 7px; border-radius: 5px; color: var(--blue-hover); background: var(--light-blue); }
+.today-agenda-empty { padding: 20px 12px; color: var(--muted); font-size: 14px; border-block: 1px solid var(--line); }
+
+@supports (transition-behavior: allow-discrete) {
+  .today-urgent, .today-sync-auth {
+    opacity: 1;
+    transition: opacity var(--motion), display var(--motion) allow-discrete;
+  }
+  .today-urgent[hidden], .today-sync-auth[hidden] { opacity: 0; }
+  @starting-style {
+    .today-urgent:not([hidden]), .today-sync-auth:not([hidden]) { opacity: 0; }
+  }
+}
+
+@media (max-width: 760px) {
+  .today-top { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .today-heading h2 { font-size: 27px; }
+  .today-lesson { padding: 12px 16px; }
+  .today-lesson-link { font-size: 19px; }
+  .today-monitor { padding: 14px 16px; }
+  .today-monitor-times { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); }
+  .today-deadline-button { grid-template-columns: 48px minmax(0, 1fr) auto; gap: 7px; }
+  .today-urgent .today-deadline-button { grid-template-columns: 58px minmax(0, 1fr) auto; padding-inline: 12px; }
+  .today-sync-grid { grid-template-columns: minmax(0, 1fr); }
+  .today-sync-row + .today-sync-row { border-left: 0; border-top: 1px solid var(--line); }
+}

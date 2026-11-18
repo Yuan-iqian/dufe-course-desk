@@ -1,0 +1,19 @@
+{
+  "name": "course-sharing-cloudflare",
+  "version": "0.7.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "wrangler dev --local --local-upstream localhost --ip 127.0.0.1 --port 8795 --persist-to .wrangler/state --inspector-port 0",
+    "test": "node --test test/*.test.mjs",
+    "db:local": "wrangler d1 migrations apply DB --local --persist-to .wrangler/state"
+  },
+  "devDependencies": {
+    "esbuild": "^0.27.0",
+    "wrangler": "4.92.0"
+  }
+}

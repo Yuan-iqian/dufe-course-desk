@@ -1,0 +1,228 @@
+{
+  "sources": [
+    {
+      "id": "econ",
+      "name": "经济学院 · 通知公告",
+      "url": "https://econ.dufe.edu.cn/xwgg/announce/",
+      "column": "通知公告",
+      "list": {
+        "item": "ul.s-ListLink > li",
+        "link": "a",
+        "date": "span.s-ListLink-date"
+      },
+      "article": {
+        "content_selector": "article.s-Article",
+        "title_selector": ".s-Article-header h1",
+        "date_selector": ".s-Article-header div span",
+        "date_format": "raw",
+        "date_source": "article"
+      },
+      "intervalMinutes": 60
+    },
+    {
+      "id": "ibc",
+      "name": "国际商学院 · 学院通知",
+      "url": "https://ibc.dufe.edu.cn/jrgs/tzygg/xytz/",
+      "column": "学院通知",
+      "list": {
+        "item": "div.list-art1",
+        "link": "a",
+        "title": "a p",
+        "date": "a span"
+      },
+      "article": {
+        "content_selector": ".text-art1",
+        "title_selector": ".list-r-title",
+        "date_selector": ".list-r-title1",
+        "date_format": "raw",
+        "date_source": "article"
+      },
+      "intervalMinutes": 60
+    },
+    {
+      "id": "jwc",
+      "name": "教务处 · 通知公告",
+      "url": "https://jwc.dufe.edu.cn/xwsd/tzgg/",
+      "column": "通知公告",
+      "list": {
+        "item": "div.newsPageItem",
+        "link": "a",
+        "title_attr": "title",
+        "date": "div.newsPageItemDate"
+      },
+      "article": {
+        "content_selector": ".articleContent",
+        "title_selector": ".articleTitle",
+        "date_selector": ".articleDate",
+        "date_format": "raw",
+        "date_source": "article"
+      },
+      "intervalMinutes": 15
+    },
+    {
+      "id": "kjxy_dj",
+      "name": "会计学院 · 工作通知（党建）",
+      "url": "https://kjxy.dufe.edu.cn/djgz/tzgs/gztz/",
+      "column": "工作通知（党建）",
+      "list": {
+        "item": "ul.newsList > li",
+        "link": "div.newsTitle a",
+        "title_attr": "title",
+        "date": "div.newsDate"
+      },
+      "article": {
+        "content_selector": ".newsDetaiContent",
+        "title_selector": ".newsDetailTitle",
+        "date_selector": ".newsDetailDate",
+        "date_format": "raw",
+        "date_source": "article"
+      },
+      "intervalMinutes": 60
+    },
+    {
+      "id": "kjxy_xs",
+      "name": "会计学院 · 通知公示（学生园地）",
+      "url": "https://kjxy.dufe.edu.cn/xsyd/tzgs/",
+      "column": "通知公示（学生园地）",
+      "list": {
+        "item": "ul.newsList > li",
+        "link": "div.newsTitle a",
+        "title_attr": "title",
+        "date": "div.newsDate"
+      },
+      "article": {
+        "content_selector": ".newsDetaiContent",
+        "title_selector": ".newsDetailTitle",
+        "date_selector": ".newsDetailDate",
+        "date_format": "raw",
+        "date_source": "article"
+      },
+      "intervalMinutes": 60
+    },
+    {
+      "id": "lib",
+      "name": "图书馆 · 通知公告",
+      "url": "https://lib.dufe.edu.cn/_s3/9/list.psp",
+      "column": "通知公告",
+      "list": {
+        "item": "ul.news_list > li",
+        "link": "span.news_title a",
+        "title_attr": "title",
+        "date": "span.news_meta"
+      },
+      "article": {
+        "content_selector": ".wp_articlecontent",
+        "title_selector": "h1.arti_title",
+        "date_format": "none",
+        "date_source": "list"
+      },
+      "intervalMinutes": 60
+    },
+    {
+      "id": "sba",
+      "name": "工商管理学院 · 活动与公告",
+      "url": "https://sba.dufe.edu.cn/xwzx/hdgg/",
+      "column": "活动与公告",
+      "list": {
+        "item": "ul.index-notice-list > li",
+        "link": "a",
+        "title": "div.index-notice-top p",
+        "date": "div.index-notice-bottom span"
+      },
+      "article": {
+        "content_selector": ".dc-wnfw-article",
+        "title_selector": "#datatable > h2",
+        "date_format": "none",
+        "date_source": "list"
+      },
+      "intervalMinutes": 60
+    },
+    {
+      "id": "sf",
+      "name": "金融学院 · 通知公告",
+      "url": "https://sf.dufe.edu.cn/xszl/tzgg/",
+      "column": "通知公告",
+      "list": {
+        "item": "ul.newsList > li",
+        "link": "div.newsTitle a",
+        "title_attr": "title",
+        "date": "div.newsDate"
+      },
+      "article": {
+        "content_selector": ".newsDetaiContent",
+        "title_selector": ".newsDetailTitle",
+        "date_selector": ".newsDetailDate",
+        "date_format": "raw",
+        "date_source": "article"
+      },
+      "intervalMinutes": 60
+    },
+    {
+      "id": "stat",
+      "name": "统计学院 · 通知公告",
+      "url": "https://stat.dufe.edu.cn/zxzx/tzgg/",
+      "column": "通知公告",
+      "list": {
+        "item": "ul.newsList > li",
+        "link": "div.newsTitle a",
+        "title_attr": "title",
+        "date": "div.newsDate"
+      },
+      "article": {
+        "content_selector": ".newsDetaiContent",
+        "title_selector": ".newsDetailTitle",
+        "date_selector": ".newsDetailDate",
+        "date_format": "raw",
+        "date_source": "article"
+      },
+      "intervalMinutes": 60
+    },
+    {
+      "id": "xsc",
+      "name": "学生工作部 · 通知公告",
+      "url": "https://xsc.dufe.edu.cn/xsgl/tzgg/",
+      "column": "通知公告",
+      "list": {
+        "item": "ul.newsList > li",
+        "link": "div.newsTitle a",
+        "title_attr": "title",
+        "date": "div.newsDate"
+      },
+      "article": {
+        "content_selector": ".newsDetaiContent",
+        "title_selector": ".newsDetailTitle",
+        "date_selector": ".newsDetailDate",
+        "date_format": "raw",
+        "date_source": "article"
+      },
+      "intervalMinutes": 15
+    },
+    {
+      "id": "yjsy",
+      "name": "研究生院 · 通知公告",
+      "url": "https://graduate.dufe.edu.cn/tzgg/",
+      "column": "通知公告",
+      "list": {
+        "item": "ul.s-ListLink > li",
+        "link": "a",
+        "date": "span.s-ListLink-date"
+      },
+      "article": {
+        "content_selector": "article.s-Article",
+        "title_selector": ".s-Article-header h1",
+        "date_selector": ".s-Article-header div span",
+        "date_format": "raw",
+        "date_source": "article"
+      },
+      "intervalMinutes": 60
+    }
+  ],
+  "disabled": [
+    {
+      "name": "就业信息网",
+      "reason": "页面列表需要动态加载，尚未适配",
+      "id": "career",
+      "url": "https://career.dufe.edu.cn/frontpage/dufe/html/newsList.html"
+    }
+  ]
+}

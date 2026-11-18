@@ -1,0 +1,84 @@
+.startup-intro {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  color: var(--ink);
+  background: linear-gradient(130deg, var(--app-gradient-start), var(--page) 58%, var(--app-gradient-end));
+}
+.startup-intro::backdrop { background: transparent; }
+html:has(.startup-intro[open]) { overflow: hidden; }
+
+.startup-visual, .startup-visual img, .startup-visual::after {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.startup-visual { overflow: hidden; }
+.startup-visual img {
+  object-fit: cover;
+  object-position: center 59%;
+  transform-origin: 74% 54%;
+  filter: var(--backdrop-photo-filter);
+}
+#startup-campus-gate { object-position: 73% 71%; }
+#startup-campus-cherry, #startup-campus-aerial { opacity: 0; }
+.startup-visual::after {
+  content: "";
+  background-image:
+    linear-gradient(90deg, var(--page) 0%, rgb(var(--backdrop-veil) / 97%) 16%, rgb(var(--backdrop-veil) / 82%) 31%, transparent 73%),
+    linear-gradient(0deg, rgb(var(--backdrop-veil) / 60%), transparent 36%);
+}
+
+.startup-wordmark {
+  position: absolute;
+  inset-inline-start: max(clamp(26px, 7vw, 118px), env(safe-area-inset-left));
+  inset-block-end: max(16%, env(safe-area-inset-bottom));
+  padding-inline-end: 20px;
+}
+.startup-wordmark::before {
+  display: block;
+  width: clamp(35px, 4vw, 66px);
+  height: 3px;
+  margin-bottom: clamp(14px, 3vh, 30px);
+  border-radius: 99px;
+  content: "";
+  background: var(--blue);
+}
+.startup-wordmark h2 {
+  margin: 0;
+  font-size: clamp(34px, 5.8vw, 92px);
+  font-weight: 740;
+  line-height: 1.12;
+  letter-spacing: -.04em;
+}
+.startup-wordmark p {
+  margin: clamp(10px, 2vh, 20px) 0 0;
+  color: var(--blue-hover);
+  font-size: clamp(17px, 2vw, 29px);
+  font-weight: 630;
+  letter-spacing: .08em;
+}
+#startup-skip {
+  position: absolute;
+  inset-block-start: max(18px, calc(env(safe-area-inset-top) + 12px));
+  inset-inline-end: max(20px, calc(env(safe-area-inset-right) + 12px));
+  min-height: 44px;
+  padding: 7px 18px;
+}
+
+@media (max-width: 700px) {
+  .startup-visual img { object-position: 66% 45%; }
+  #startup-campus-gate { object-position: 76% 59%; }
+  .startup-visual::after {
+    background-image: linear-gradient(0deg, var(--page) 1%, rgb(var(--backdrop-veil) / 97%) 17%, rgb(var(--backdrop-veil) / 79%) 31%, transparent 63%);
+  }
+  .startup-wordmark { inset-block-end: max(13%, calc(env(safe-area-inset-bottom) + 18px)); }
+}

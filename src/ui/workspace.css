@@ -1,0 +1,185 @@
+:root {
+  --ink: #111111;
+  --muted: #525e72;
+  --line: #dce3ef;
+  --surface: #f3f6fb;
+  --light-blue: #edf3ff;
+  --panel-radius: 14px;
+  --control-radius: 9px;
+  --space: 8px;
+  --motion: 160ms;
+}
+
+body {
+  font-family: system-ui, "Microsoft YaHei UI", "PingFang SC", sans-serif;
+}
+.app-shell { max-width: 1540px; padding: 0 32px; }
+.app-header { min-height: 76px; }
+.brand h1 { font-size: 20px; font-weight: 730; }
+.brand-mark { width: 40px; height: 40px; background: transparent; }
+.brand-mark img { width: 100%; height: 100%; filter: none; }
+.app-layout { display: grid; grid-template-columns: 168px minmax(0, 1fr); gap: 28px; }
+.app-content { min-width: 0; padding-top: 24px; }
+.app-content > main { position: relative; min-width: 0; }
+.app-content footer { margin-top: 24px; }
+.view-tabs {
+  position: sticky;
+  isolation: isolate;
+  top: 18px;
+  align-self: start;
+  display: grid;
+  gap: var(--space);
+  padding-top: 24px;
+  margin: 0;
+  border: 0;
+}
+.view-tab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--control-radius);
+  color: var(--muted);
+  text-align: left;
+  font-size: 14px;
+  font-weight: 620;
+  cursor: pointer;
+  transition: background-color var(--motion), color var(--motion), border-color var(--motion), transform 100ms;
+}
+.view-tab img { width: 20px; height: 20px; flex: none; opacity: .76; }
+.view-tab:hover { background: var(--surface); color: var(--ink); }
+.view-tab.selected { color: var(--blue-hover); border-color: var(--accent-edge); background: var(--light-blue); }
+.view-tabs.has-view-indicator .view-tab.selected { border-color: transparent; background: transparent; }
+.view-tab-indicator {
+  position: absolute;
+  inset: 0 auto auto 0;
+  border: 1px solid var(--accent-edge);
+  border-radius: var(--control-radius);
+  background: var(--light-blue);
+  pointer-events: none;
+  transition: transform 220ms cubic-bezier(.22, .72, .24, 1);
+}
+.view-panel-exit[hidden] {
+  display: block !important;
+  position: absolute;
+  inset-inline: 0;
+  z-index: 1;
+  overflow: clip;
+  background: var(--page);
+  pointer-events: none;
+}
+.view-tab.selected img { opacity: 1; }
+.view-tab:active { transform: scale(.98); }
+.view-tab:disabled { opacity: .5; cursor: not-allowed; }
+.view-tab:focus-visible { outline-offset: 2px; }
+
+.page-heading, .today-heading, .homework-heading, .timetable-heading, .cp-heading { margin: 0 0 20px; }
+.app-content > main { display: flow-root; }
+.page-heading h2, .today-heading h2, .homework-heading h2, .timetable-heading h2, .cp-heading h2 {
+  color: var(--ink);
+  font-size: clamp(25px, 3vw, 34px);
+  font-weight: 730;
+  line-height: 1.18;
+  letter-spacing: -.02em;
+}
+.page-heading h2 { margin: 0; }
+.btn, .form-control, .form-select { border-radius: var(--control-radius); }
+.btn-light {
+  --bs-btn-bg: var(--surface);
+  --bs-btn-border-color: var(--control-border);
+  --bs-btn-hover-bg: var(--light-blue);
+  --bs-btn-hover-border-color: var(--accent-edge);
+}
+.form-control, .form-select { border-color: var(--control-border); }
+.form-control:hover:not(:disabled), .form-select:hover:not(:disabled) { border-color: var(--blue); }
+.form-control:focus, .form-select:focus { border-color: var(--blue); }
+.btn:focus-visible, .text-button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.btn:disabled, .text-button:disabled { opacity: .55; }
+
+.today-top { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 16px; }
+.today-timetable, .today-monitor { border-color: var(--line); border-radius: var(--panel-radius); background: var(--panel); }
+.today-class-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 16px; border-bottom: 1px solid var(--line); }
+.today-class-head h3 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 16px; font-weight: 700; }
+.today-class-head .text-button { color: var(--blue-hover); font-size: 13px; }
+.today-lesson { padding: 12px 16px; }
+.today-lesson + .today-lesson { border-top: 1px solid var(--line); }
+.today-lesson.today-current-active { background: var(--light-blue); }
+.today-lesson:last-child { border-radius: 0 0 var(--panel-radius) var(--panel-radius); }
+.today-slot-label { margin-bottom: 4px; }
+.today-slot-empty { margin-top: 4px; font-size: 15px; }
+.today-lesson-link { font-size: 19px; }
+.today-monitor { display: flex; flex-direction: column; padding: 16px; }
+.today-monitor-actions { margin-top: auto; padding-top: 8px; }
+.today-agenda { margin-top: 24px; }
+.today-day h4 { border-radius: 7px; }
+.today-deadline-button { transition: background-color var(--motion), transform 100ms; }
+
+.timetable-controls { margin-top: 16px; }
+.timetable-grid, .timetable-switch, .homework-stats, .cp-card, .cp-filters { border-color: var(--line); }
+.timetable-grid { background: var(--panel); }
+.timetable-day h3 { padding-block: 12px; background: var(--surface); border-radius: 5px 5px 0 0; }
+.timetable-today h3 { background: var(--light-blue); }
+.timetable-lesson { border-radius: var(--control-radius); }
+.timetable-lesson small, .cp-card-meta { color: var(--muted); }
+.timetable-lesson small { font-size: 12px; }
+.timetable-week-picker { padding: 10px; background: var(--surface); border-radius: var(--control-radius); }
+.timetable-week-picker .btn { --bs-btn-bg: var(--panel); }
+.homework-stats { background: var(--panel); }
+.homework-stats > div { padding: 14px 16px; }
+.homework-stats strong { font-size: 25px; }
+.homework-filters, .cp-filters { padding: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--panel-radius); }
+.homework-row { padding-inline: 10px; }
+.homework-empty, .timetable-empty { background: var(--surface); border-radius: var(--control-radius); }
+.workspace { gap: 20px; grid-template-columns: minmax(0, 1fr) minmax(200px, 244px); }
+.monitor-panel { background: var(--panel); border-color: var(--line); border-radius: var(--panel-radius); }
+.settings-panel { padding: 16px; border: 1px solid var(--line); border-radius: var(--panel-radius); align-self: start; }
+.cp-heading { margin-top: 0; }
+.cp-card:hover { box-shadow: none; }
+.cp-title { min-height: 44px; }
+.cp-dialog { border-color: var(--line); border-radius: var(--panel-radius); }
+.cp-dialog-head button { min-height: 44px; }
+
+@media (min-width: 1000px) {
+  .homework-heading { flex-direction: row; align-items: center; }
+}
+@media (max-width: 1080px) {
+  .app-shell { padding-inline: 24px; }
+  .app-layout { grid-template-columns: 138px minmax(0, 1fr); gap: 20px; }
+  .homework-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cp-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .workspace { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 900px) {
+  .app-shell { padding-inline: 20px; }
+  .app-layout { display: block; }
+  .app-content { padding-top: 0; }
+  .view-tabs { position: relative; top: auto; grid-template-columns: repeat(5, minmax(0, 1fr)); padding: 10px 0; margin-bottom: 16px; }
+  .view-tab { justify-content: center; gap: 6px; padding-inline: 4px; }
+}
+@media (max-width: 760px) {
+  .today-top { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .timetable-day h3 { padding-block: 10px; background: none; }
+  .timetable-today h3 { background: var(--light-blue); }
+  .homework-heading, .cp-heading { gap: 12px; }
+}
+@media (max-width: 520px) {
+  .app-shell { padding-inline: 14px; }
+  .app-header { min-height: 62px; gap: 8px; }
+  .brand h1 { font-size: 16px; }
+  .brand-mark { width: 34px; height: 34px; }
+  .app-header .demo-badge { margin-left: 0; }
+  .view-tabs { gap: 4px; }
+  .view-tabs .view-tab { flex-direction: column; gap: 4px; padding-inline: 2px; font-size: 12px; line-height: 1.2; }
+  .view-tab img { width: 16px; height: 16px; }
+  .today-heading .btn { font-size: 12px; }
+  .today-monitor-times { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .view-tab, .view-tab-indicator, .today-deadline-button { transition: none; }
+  .view-tab:active { transform: none; }
+}

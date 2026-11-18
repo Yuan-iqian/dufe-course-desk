@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>我的校园码 · 东财课历</title>
+  <link rel="stylesheet" href="campus-card-window.css">
+</head>
+<body>
+  <header>
+    <div class="toolbar"><strong>我的校园码</strong><button id="card-reload" type="button"><img src="../assets/refresh-cw.svg" alt="">刷新</button><button id="card-close" type="button">返回应用</button></div>
+    <p>学校官方页面 · sso.dufe.edu.cn</p>
+  </header>
+  <main id="card-placeholder" role="status" aria-live="polite"><img src="../assets/qr-code.svg" alt=""><p id="card-status">正在连接学校…</p><button id="card-retry" type="button" hidden>重新连接</button></main>
+  <script src="campus-card-window.js"></script>
+</body>
+</html>

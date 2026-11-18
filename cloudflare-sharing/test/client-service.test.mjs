@@ -1,0 +1,24 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync,readdirSync,mkdirSync} from 'node:fs';
+import {build} from 'esbuild';
+import {Miniflare} from 'miniflare';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+test('客户端入口关闭网页和共享，公开公告分页不漏记录，正文更新进入增量同步',async t=>{
+ const out=path.join(root,'.test-data/client-service.mjs');mkdirSync(path.dirname(out),{recursive:true});
+ await build({entryPoints:[path.join(root,'worker/index.mjs')],outfile:out,bundle:true,format:'esm',platform:'browser',target:'es2022'});
+ const mf=new Miniflare({modules:true,scriptPath:out,compatibilityDate:'2026-05-15',d1Databases:{DB:'clients'}});t.after(()=>mf.dispose());
+ const db=await mf.getD1Database('DB');
+ for(const file of readdirSync(path.join(root,'drizzle')).filter(x=>x.endsWith('.sql')).sort())for(const sql of readFileSync(path.join(root,'drizzle',file),'utf8').split('--> statement-breakpoint'))if(sql.trim())await db.prepare(sql).run();
+ for(const route of ['/','/sharing.js','/api/state','/api/register','/api/campus/alerts'])assert.equal((await mf.dispatchFetch('https://test.local'+route)).status,410);
+ const n=205;
+ for(let offset=0;offset<n;offset+=80)await db.batch(Array.from({length:Math.min(80,n-offset)},(_,index)=>{const i=offset+index;return db.prepare('INSERT INTO campus_notices(id,source_id,url,title,published_at,category,first_seen,updated_at) VALUES(?,?,?,?,?,?,?,?)').bind((i+1).toString(16).padStart(64,'0'),'jwc','https://jwc.dufe.edu.cn/test/'+i,'通知'+i,'2026-11-13','academic',1000,1000);}));
+ const get=async route=>{const response=await mf.dispatchFetch('https://test.local/api/campus/'+route);assert.equal(response.status,200);return (await response.json()).data;};
+ const a=await get('feed');assert.equal(a.items.length,200);assert.equal(a.more,true);const b=await get('feed?cursor='+a.cursor);assert.equal(b.items.length,5);assert.equal(b.more,false);assert.equal(new Set([...a.items,...b.items].map(x=>x.id)).size,n);
+ const id=a.items[0].id;await db.prepare('UPDATE campus_notices SET detail_at=2000,summary=? WHERE id=?').bind('新增正文',id).run();
+ const c=await get('feed?cursor='+b.cursor);assert.equal(c.items.length,1);assert.equal(c.items[0].summary,'新增正文');assert.equal(c.items[0].completed,false);
+ assert.equal((await mf.dispatchFetch('https://test.local/api/campus/feed?cursor=oops')).status,400);
+ assert.equal((await get('overview')).summary.total,n);
+});
