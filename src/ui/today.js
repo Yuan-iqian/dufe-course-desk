@@ -45,12 +45,12 @@ const TodayHome = (() => {
     if (state.checkingLesson) return ['正在检查', state.checkingLesson.title];
     if (state.phase === 'login-required') return ['需要登录', '重新登录学校后可继续检查'];
     if (state.sync?.schedule.status === 'syncing') return ['正在同步', '正在读取学校课表'];
-    if (state.checking) return ['正在检查', '正在核对签到活动'];
+    if (state.checking) return ['正在检查', '正在核对课堂活动'];
     if (state.phase === 'error') return ['检查失败', state.running ? '将自动重试，也可以立即同步' : '点击「同步课表与作业」重试'];
-    if (!state.running) return [state.connected ? '监控未开启' : '尚未连接', state.connected ? '开始监控后会按所选模式检查签到' : '登录学校后可同步课表并开始监控'];
+    if (!state.running) return [state.connected ? '监控未开启' : '尚未连接', state.connected ? '开始监控后会按所选模式检查签到与练习' : '登录学校后可同步课表并开始监控'];
     if (state.lessons.length) {
       const more = state.lessons.length > 1 ? `，另有 ${state.lessons.length - 1} 节` : '';
-      return [active ? `${active} 项签到进行中` : '监控中', state.lessons[0].title + more];
+      return [active ? `${active} 项课堂活动进行中` : '监控中', state.lessons[0].title + more];
     }
     if (next) return ['等待上课', `${next.title}，${timeLabel.format(next.start - 10 * 60000)} 开始检查`];
     return ['等待课表', '已同步课表中没有后续课次'];
@@ -84,8 +84,8 @@ const TodayHome = (() => {
       const signinRows = signins.map(item => deadlineItem({
         title: item.title, meta: item.courseTitle,
         time: item.endTime ? `${dayKey.format(item.endTime) === today ? '' : shortDate.format(item.endTime) + ' '}${timeLabel.format(item.endTime)} 截止` : '进行中',
-        label: '签到进行中', urgent: true
-      }, () => state.demo ? selectView('signin') : perform('open-signin-activity', { lessonId: item.lessonId, id: item.id })));
+        label: item.kind === 'exercise' ? '练习进行中' : '签到进行中', urgent: true
+      }, () => state.demo ? selectView('signin') : perform('open-signin-activity', { lessonId: item.lessonId, id: item.id, kind: item.kind })));
       const homeworkRows = homework.map(row => deadlineItem({
         title: row.title, meta: row.meta, time: timeLabel.format(row.at), label: '作业今日截止', urgent: true
       }, () => state.demo ? selectView('homework') : perform('open-homework', row.id)));
@@ -183,7 +183,7 @@ const TodayHome = (() => {
         $('today-status').classList.toggle('today-status-error', ['error', 'login-required'].includes(state.phase));
         const previous = state.lastSigninCheck;
         const time = previous && (dayKey.format(previous) === today ? checkTime.format(previous) : shortDate.format(previous) + ' ' + checkTime.format(previous));
-        set('today-last-check', time ? `${time} · ${state.lastSigninLesson.title}` : '尚未检查签到');
+        set('today-last-check', time ? `${time} · ${state.lastSigninLesson.title}` : '尚未检查课堂活动');
         const seconds = state.nextCheck ? Math.max(0, Math.ceil((state.nextCheck - now) / 1000)) : 0;
         set('today-next-check', state.checking && state.phase !== 'sleeping' ? '正在检查'
           : state.running && state.nextCheck ? `${checkTime.format(state.nextCheck)}（${seconds} 秒后）` : '—');

@@ -5,6 +5,7 @@ const { Monitor, parseCourseUrl, schoolSigninUrl, signinActivityUrl, timetableLe
 const { FileStore } = require('./store.cjs');
 const { SchoolApi } = require('./school.cjs');
 const { CampusCardWindow } = require('./campus-card.cjs');
+const { SchoolCredentials } = require('./school-credentials.cjs');
 const { LoginMemory } = require('./login-memory.cjs');
 const { DemoApi } = require('./demo.cjs');
 const { HomeworkMonitor } = require('./homework.cjs');
@@ -25,7 +26,7 @@ else {
   let mainWindow, tray, monitor, homework, campus, campusMonitor, campusCard, api, quitting = false;
   let schoolIdentity = null;
   let loggingOut = false;
-  let loginMemory, readyToQuit = false;
+  let loginMemory, credentials, credentialOperation = false, readyToQuit = false;
   const notifications = new Set();
   const uiPath = path.join(__dirname, 'ui', 'index.html');
   const uiUrl = pathToFileURL(uiPath).href;
@@ -58,7 +59,8 @@ else {
     if (config.sound) mainWindow.webContents.send('reminder:sound');
     mainWindow.flashFrame(true);
     if (Notification.isSupported() && !test) {
-      const n = new Notification({ title: isTest ? '东财课历 · 测试' : record.kind === 'login' ? '签到监控已暂停' : record.kind === 'homework' ? `${record.courseTitle} · 作业提醒` : `${record.courseTitle} 开始签到`, body: isTest ? '收到这条通知，说明系统提醒已开启' : record.title, icon: iconPath, silent: !config.sound, timeoutType: 'never' });
+      const activityTitle = record.kind === 'exercise' ? `${record.courseTitle} · 课堂练习` : `${record.courseTitle} 开始签到`;
+      const n = new Notification({ title: isTest ? '东财课历 · 测试' : record.kind === 'login' ? '签到监控已暂停' : record.kind === 'homework' ? `${record.courseTitle} · 作业提醒` : activityTitle, body: isTest ? '收到这条通知，说明系统提醒已开启' : record.title, icon: iconPath, silent: !config.sound, timeoutType: 'never' });
       notifications.add(n);
       n.on('click', () => { if (!isTest && !demo && record.url) api.open(record.url).catch(() => showMain()); else showMain(); });
       n.on('close', () => notifications.delete(n));
@@ -73,6 +75,7 @@ else {
     const { session } = require('electron');
     loginMemory = new LoginMemory(session.fromPartition('persist:dufe-school'), app.getPath('userData'));
     if(!demo)await loginMemory.start();
+    credentials = new SchoolCredentials(app.getPath('userData'));
     mainWindow = new BrowserWindow({ title: '东财课历', width: 1180, height: 900, minWidth: 390, minHeight: 600, backgroundColor: '#ffffff', icon: iconPath, show: false, webPreferences: { preload: path.join(__dirname, 'preload.cjs'), nodeIntegration: false, contextIsolation: true, sandbox: true, backgroundThrottling: false } });
     mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     mainWindow.webContents.on('will-navigate', event => event.preventDefault());
@@ -128,6 +131,22 @@ else {
           if(!['https:','http:'].includes(target.protocol)||target.username||target.password||!(target.hostname==='dufe.edu.cn'||target.hostname.endsWith('.dufe.edu.cn')||target.hostname==='mp.weixin.qq.com'))throw new Error('无效的学校来源地址');
           await shell.openExternal(target.href);return {ok:true};
         }
+        if (action === 'credentials-status') return { ok: true, saved: !demo && await credentials.saved() };
+        if (['credentials-save', 'credentials-clear', 'login-fill'].includes(action)) {
+          if (demo) throw new MonitorError('input', '请在正式软件中管理学校账号');
+          if (credentialOperation) throw new MonitorError('input', '正在处理学校账号，请稍后重试');
+          credentialOperation = true;
+          try {
+            if (action === 'credentials-save') await credentials.save(payload?.account, payload?.password);
+            if (action === 'credentials-clear') await credentials.clear();
+            if (action === 'login-fill') {
+              const generation = api.generation;
+              const filled = await api.fillLogin(await credentials.read(), () => !loggingOut && api.generation === generation);
+              if (!filled) throw new MonitorError('input', '未找到学校账号登录表单，请在学校窗口核对页面');
+            }
+            return { ok: true, saved: await credentials.saved() };
+          } finally { credentialOperation = false; }
+        }
         if (action === 'campus-session') return { ok:true, data:campus.snapshot() };
         if (action === 'term-timetable') return { ok:true, data:await monitor.termTimetable(payload === true) };
         if (action === 'week-timetable') return { ok:true, data:await monitor.weekTimetable(payload?.week, payload?.refresh === true) };
@@ -178,7 +197,7 @@ else {
         }
         else if (action === 'notifications-settings') await shell.openExternal('ms-settings:notifications');
         else if (action === 'demo-scenario' && demo) {
-          if (!['empty','active','ended','offline','expired','new'].includes(payload)) throw new MonitorError('input', '无效的演示场景');
+          if (!['empty','active','ended','offline','expired','exercise','new'].includes(payload)) throw new MonitorError('input', '无效的演示场景');
           if (payload === 'new') { api.eventId++; api.scenario = 'active'; } else api.scenario = payload;
           await monitor.check({ refresh: true });
         }

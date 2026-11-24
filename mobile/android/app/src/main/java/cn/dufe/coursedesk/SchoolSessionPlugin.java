@@ -40,11 +40,64 @@ public class SchoolSessionPlugin extends Plugin {
     private boolean loaded;
     private boolean clearing;
     private String reader;
+    private String loginForm;
+    private int credentialRevision;
     private CampusCardWindow campusCard;
     private SchoolLoginMemory loginMemory;
     private SchoolLoginMemory memory() {
         if(loginMemory==null)loginMemory=new SchoolLoginMemory(getContext());
         loginMemory.restore();return loginMemory;
+    }
+
+    @PluginMethod
+    public void credentialsStatus(PluginCall call) {
+        handler.post(() -> call.resolve(new JSObject().put("saved", memory().credentialsSaved())));
+    }
+
+    @PluginMethod
+    public void saveCredentials(PluginCall call) {
+        String account = call.getString("account", "").trim(), password = call.getString("password", "");
+        if (account.isEmpty() || account.length() > 128 || password.isEmpty() || password.length() > 256) {
+            call.reject("请输入学校账号和密码"); return;
+        }
+        handler.post(() -> {
+            try { memory().saveCredentials(account, password); credentialRevision++; call.resolve(); }
+            catch (Exception error) { call.reject("系统加密保存失败，请解锁设备后重试"); }
+        });
+    }
+
+    @PluginMethod
+    public void clearCredentials(PluginCall call) {
+        handler.post(() -> {
+            credentialRevision++;
+            if (memory().clearCredentials()) call.resolve(); else call.reject("清除失败，请重试");
+        });
+    }
+
+    private boolean onLoginPage(WebView view) {
+        if (view == null || view.getUrl() == null) return false;
+        Uri url = Uri.parse(view.getUrl());
+        return allowedSchool(view.getUrl()) && "sso.dufe.edu.cn".equals(url.getHost()) &&
+            "/auth/oauth/authorize".equals(url.getPath());
+    }
+
+    private void fillSaved(PluginCall call, WebView view, Dialog owner, int revision, int attempt) {
+        if (clearing || view != school || dialog != owner || !owner.isShowing() || revision != credentialRevision) {
+            call.reject("学校窗口已关闭或保存的账号已更新"); return;
+        }
+        if (loaded && onLoginPage(view)) {
+            try {
+                view.evaluateJavascript(loginForm + "(" + memory().readCredentials() + ")", value -> {
+                    if ("true".equals(value)) call.resolve();
+                    else if (attempt < 32) handler.postDelayed(() -> fillSaved(call, view, owner, revision, attempt + 1), 250);
+                    else call.reject("未找到学校账号登录表单，请核对学校页面");
+                });
+            } catch (Exception error) { call.reject("无法读取已保存账号，请重新保存"); }
+        } else if (attempt >= 32 || (loaded && exactSchool() && attempt >= 8)) {
+            call.reject("未找到学校账号登录表单，请核对学校页面");
+        } else {
+            handler.postDelayed(() -> fillSaved(call, view, owner, revision, attempt + 1), 250);
+        }
     }
 
     @PluginMethod
@@ -100,6 +153,12 @@ public class SchoolSessionPlugin extends Plugin {
             while ((count = stream.read(buffer)) != -1) bytes.write(buffer, 0, count);
             reader = new String(bytes.toByteArray(), StandardCharsets.UTF_8);
         }
+        try (java.io.InputStream stream = getContext().getAssets().open("public/school-login-form.js")) {
+            java.io.ByteArrayOutputStream bytes = new java.io.ByteArrayOutputStream();
+            byte[] buffer = new byte[4096]; int count;
+            while ((count = stream.read(buffer)) != -1) bytes.write(buffer, 0, count);
+            loginForm = new String(bytes.toByteArray(), StandardCharsets.UTF_8);
+        }
         school = new WebView(getActivity());
         school.getSettings().setJavaScriptEnabled(true);
         school.getSettings().setDomStorageEnabled(true);
@@ -138,7 +197,12 @@ public class SchoolSessionPlugin extends Plugin {
         handler.post(() -> {
             try {
                 ensureSchool();
-                if (dialog != null && dialog.isShowing()) { call.resolve(); return; }
+                boolean fill = Boolean.TRUE.equals(call.getBoolean("fillSaved"));
+                if (fill && !memory().credentialsSaved()) { call.reject("请先保存学校账号"); return; }
+                if (dialog != null && dialog.isShowing()) {
+                    if (fill) fillSaved(call, school, dialog, credentialRevision, 0); else call.resolve();
+                    return;
+                }
                 if (school.getParent() != null) ((ViewGroup) school.getParent()).removeView(school);
                 dialog = new Dialog(getActivity(), android.R.style.Theme_DeviceDefault_Light_NoActionBar);
                 LinearLayout layout = new LinearLayout(getActivity());
@@ -160,7 +224,10 @@ public class SchoolSessionPlugin extends Plugin {
                 dialog.show();
                 dialog.getWindow().setLayout(-1, -1);
                 if (!url.equals(ORIGIN) && !url.equals(ORIGIN + "/")) school.loadUrl(url);
-                call.resolve();
+                if (fill) {
+                    if (!onLoginPage(school) && loaded) { loaded = false; school.loadUrl(ORIGIN + "/"); }
+                    fillSaved(call, school, dialog, credentialRevision, 0);
+                } else call.resolve();
             } catch (Exception error) { call.reject(error.getMessage()); }
         });
     }
@@ -169,7 +236,7 @@ public class SchoolSessionPlugin extends Plugin {
         if ("GET".equals(method)) return path.equals("/student/currentDate") || path.equals("/student/queryCourseList") || path.equals("/student/HomeworkList");
         if (!"POST".equals(method)) return false;
         return path.equals("/student/signIn/getStuSignInList") || path.equals("/student/signIn/getSignInInfo") ||
-            path.equals("/student/signIn/getOnlineSignInInfo") || path.equals("/student/getWeekTimePaper");
+            path.equals("/student/signIn/getOnlineSignInInfo") || path.equals("/student/getWeekTimePaper") || path.equals("/student/exercise/getExerciseList");
     }
 
     @PluginMethod
@@ -194,8 +261,15 @@ public class SchoolSessionPlugin extends Plugin {
         if (!pending.containsKey(requestId)) return;
         if (!loaded) { handler.postDelayed(() -> runRequest(requestId, call), 250); return; }
         if (!exactSchool()) {
-            pending.remove(requestId);
-            call.resolve(new JSObject().put("error", "auth"));
+            if (onLoginPage(school)) {
+                school.evaluateJavascript(loginForm + "(null)", value -> {
+                    PluginCall waiting = pending.remove(requestId);
+                    if (waiting != null) waiting.resolve(new JSObject().put("error", "true".equals(value) ? "auth" : "network"));
+                });
+            } else {
+                pending.remove(requestId);
+                call.resolve(new JSObject().put("error", "network"));
+            }
             return;
         }
         String quoted = JSONObject.quote(requestId);

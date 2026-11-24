@@ -13,7 +13,7 @@ test('学校登录读取不返回凭据，跨学期身份稳定，切换期间�
  const script=requestScript('/student/HomeworkList','GET',{operation:'3'});
  const a=await vm.runInNewContext(script,context);values.batch='2026B';const b=await vm.runInNewContext(script,context);
  assert.equal(a.identity.id,b.identity.id);assert.notEqual(a.scope,b.scope);assert.ok(!JSON.stringify(a).includes('secret-test'));assert.ok(!JSON.stringify(a).includes('20260001'));
- change=true;assert.equal((await vm.runInNewContext(script,context)).error,'auth');
+ change=true;assert.equal((await vm.runInNewContext(script,context)).error,'network');
  assert.throws(()=>requestScript('/student/signIn/submit','POST',{}));
 });
 

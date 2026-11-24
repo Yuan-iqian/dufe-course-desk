@@ -1,6 +1,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { build } = require('esbuild');
+const { schoolLoginForm } = require('../../src/shared/school-login-form.cjs');
 const { readSchool } = require('../../src/shared/school-protocol.cjs');
 const root = path.resolve(__dirname, '..');
 const output = path.join(root, 'www');
@@ -26,6 +27,7 @@ const output = path.join(root, 'www');
   await fs.writeFile(path.join(output, 'start.js'), "location.replace('./ui/index.html');");
   await fs.copyFile(path.join(root, 'src/mobile.css'), path.join(output, 'ui/mobile.css'));
   await fs.writeFile(path.join(output, 'school-request.js'), '(' + readSchool.toString() + ')');
+  await fs.writeFile(path.join(output, 'school-login-form.js'), '(' + schoolLoginForm.toString() + ')');
   await build({
     entryPoints: [path.join(root, 'src/runtime.cjs')], outfile: path.join(output, 'ui/mobile-bridge.js'),
     bundle: true, platform: 'browser', format: 'iife', target: 'es2022',

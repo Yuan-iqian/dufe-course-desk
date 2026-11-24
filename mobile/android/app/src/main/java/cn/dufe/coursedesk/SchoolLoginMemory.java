@@ -39,6 +39,30 @@ final class SchoolLoginMemory {
         }
         return (SecretKey) ks.getKey(KEY, null);
     }
+    boolean credentialsSaved() { return prefs.contains("credentials"); }
+
+    void saveCredentials(String account, String password) throws Exception {
+        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+        cipher.init(Cipher.ENCRYPT_MODE, key());
+        byte[] data = new JSONObject().put("account", account).put("password", password)
+            .toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        String encrypted = new JSONObject()
+            .put("iv", Base64.encodeToString(cipher.getIV(), Base64.NO_WRAP))
+            .put("data", Base64.encodeToString(cipher.doFinal(data), Base64.NO_WRAP)).toString();
+        if (!prefs.edit().putString("credentials", encrypted).commit()) throw new IllegalStateException();
+    }
+
+    JSONObject readCredentials() throws Exception {
+        JSONObject envelope = new JSONObject(prefs.getString("credentials", "{}"));
+        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+        byte[] iv = Base64.decode(envelope.getString("iv"), Base64.NO_WRAP);
+        cipher.init(Cipher.DECRYPT_MODE, key(), new GCMParameterSpec(128, iv));
+        byte[] data = cipher.doFinal(Base64.decode(envelope.getString("data"), Base64.NO_WRAP));
+        return new JSONObject(new String(data, java.nio.charset.StandardCharsets.UTF_8));
+    }
+
+    boolean clearCredentials() { return prefs.edit().remove("credentials").commit(); }
+
     private boolean sessionOnly(String value) {
         String lower = value.toLowerCase(Locale.ROOT);
         return !lower.matches("(?s).*;\\s*(expires|max-age)\\s*=.*") && !value.contains("\r") && !value.contains("\n");

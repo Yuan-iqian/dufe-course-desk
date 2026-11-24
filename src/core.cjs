@@ -62,7 +62,7 @@ function normalizeSchedule(data) {
           title: String(course.courseName || course.name || courseNo).slice(0,80),
           room: typeof course.address === 'string' ? course.address.trim().slice(0,120) : '',
           teacher: typeof course.teacherName === 'string' ? course.teacherName.trim().slice(0,80) : '',
-          courseNo, courseSeq
+          courseNo, courseSeq, courseId: courseNumber(course.courseId)
         });
       }
     }
@@ -87,6 +87,24 @@ function normalizeList(data) {
     return { id: String(row.id), type: Number(row.type), title: String(row.title || '课堂签到').slice(0,100), participation: String(row.signStatus) };
   });
 }
+function normalizeExercises(data, lesson, now) {
+  if (data === null) return [];
+  if (!Array.isArray(data)) throw invalid('课堂练习列表格式无法识别');
+  const url = `${ORIGIN}/course/detail/${lesson.courseNo}/${lesson.courseSeq}/${lesson.id}/exercise`;
+  return data.map(row => {
+    const exerciseId = id(row?.id), status = String(row?.exerciseStatus), participation = String(row?.studentExerciseStatus);
+    if (!exerciseId || !['0', '1', '2'].includes(status) || !['0', '1'].includes(participation)) {
+      throw invalid('课堂练习状态无法识别，请在学校页面查看');
+    }
+    const start = timeValue(row.startTime), endTime = timeValue(row.endTime);
+    const state = participation === '1' ? 'completed'
+      : status === '2' || (endTime !== null && endTime <= now) ? 'ended'
+      : status === '0' || (start !== null && start > now) ? 'scheduled' : 'active';
+    const title = String(row.description || '课堂练习').slice(0, 100);
+    return { kind: 'exercise', id: exerciseId, state, title, endTime, lessonId: lesson.id, courseTitle: lesson.title, url };
+  });
+}
+
 function classifyDetail(data, now) {
   const model = data?.signInModel;
   if (!model || ![0,1,2].includes(model.status) || ![0,1,3,4].includes(data.signStatus)) throw invalid('签到详情格式尚未适配，请打开学校页面查看');
@@ -121,9 +139,10 @@ function schoolSigninUrl(monitor, recordKey) {
 
 function signinActivityUrl(monitor, payload) {
   const { connected, activities } = monitor.state;
-  const item = connected && activities.find(item => item.lessonId === payload?.lessonId && item.id === payload?.id);
+  const item = connected && activities.find(item => item.lessonId === payload?.lessonId && item.id === payload?.id && (item.kind || 'signin') === (payload?.kind || 'signin'));
   if (!item || item.state !== 'active' || item.endTime !== null && item.endTime <= monitor.now()) {
-    throw new MonitorError('input', '此签到当前无法打开，请检查签到状态');
+    const label = payload?.kind === 'exercise' ? '练习' : '签到';
+    throw new MonitorError('input', `此${label}当前无法打开，请检查活动状态`);
   }
   return item.url;
 }
@@ -134,9 +153,10 @@ class Monitor extends EventEmitter {
     const saved = store.read();
     try { this.config = validateConfig({ ...DEFAULTS, ...saved.config }); } catch { this.config = { ...DEFAULTS }; }
     this.records = Array.isArray(saved.records) ? saved.records : [];
+    this.exerciseBaselines = new Map(Array.isArray(saved.exerciseBaselines) ? saved.exerciseBaselines : []);
     this.state = {
       running: false, phase: 'idle', connected: false, scope: '', error: '',
-      schedule: [], manualLesson: null, lessons: [], activities: [],
+      schedule: [], manualLesson: null, lessons: [], activities: [], exerciseError: '',
       lastChecked: null, lastSchedule: null, nextCheck: null, failures: 0, checking: false,
       checkingLesson: null, lastSigninCheck: null, lastSigninLesson: null, timetableRevision: 0, calendar: null,
       scheduleSync: { status: 'idle', lastSuccessAt: null, error: '' }
@@ -194,7 +214,7 @@ class Monitor extends EventEmitter {
     return structuredClone({ ...state, scheduleSync, config: this.config, history: this.records.filter(x => x.scope === scope).slice(-50).reverse(), upcoming: this.state.schedule.find(x => x.start > this.now()) || null });
   }
   publish() { this.emit('change', this.snapshot()); }
-  persist() { this.store.write({ config: this.config, records: this.records.slice(-2000) }); }
+  persist() { this.store.write({ config: this.config, records: this.records.slice(-2000), exerciseBaselines: [...this.exerciseBaselines] }); }
   configure(config) {
     const next = validateConfig(config);
     if (this.state.checking) throw new MonitorError('busy', '正在检查，请稍后保存设置');
@@ -216,7 +236,7 @@ class Monitor extends EventEmitter {
     this.schedulePending = false;
     Object.assign(this.state, {
       running: false, connected: false, nextCheck: null, phase: 'login-required', error: message,
-      scope: '', schedule: [], manualLesson: null, lessons: [], activities: [], lastChecked: null, lastSchedule: null, calendar: null,
+      scope: '', schedule: [], manualLesson: null, lessons: [], activities: [], exerciseError: '', lastChecked: null, lastSchedule: null, calendar: null,
       checkingLesson: null, lastSigninCheck: null, lastSigninLesson: null,
       scheduleSync: { status: 'login-required', lastSuccessAt: null, error: message }
     });
@@ -241,6 +261,45 @@ class Monitor extends EventEmitter {
     this.timer = this.timers.setTimeout(() => this.check(), delay);
     this.timer?.unref?.();
   }
+  async deliver(event, key, valid) {
+    if (event.state !== 'active' || !this.state.running) return;
+    let record = this.records.find(item => item.key === key);
+    if (record?.delivery === 'emitted') return;
+    if (!record) {
+      record = { ...event, key, scope: this.state.scope, detectedAt: this.now(), delivery: 'pending' };
+      this.records.push(record);
+      this.persist();
+    }
+    await this.notify(record, this.config);
+    valid();
+    record.delivery = 'emitted';
+    record.notifiedAt = this.now();
+    this.persist();
+  }
+
+  async checkExercises(lesson, lessonKey, valid) {
+    if (!this.api.exercises) return [];
+    if (!lesson.courseId) throw invalid('课表缺少课程编号，暂时无法检查此课次的练习');
+    const response = await this.api.exercises(lesson);
+    valid();
+    if (response.scope !== this.state.scope) {
+      this.state.lastSchedule = null;
+      throw new MonitorError('network', '课表或学期正在切换，请重新同步');
+    }
+    const events = normalizeExercises(response.data, lesson, this.now());
+    if (!this.state.running) return events;
+    if (!this.exerciseBaselines.has(lessonKey)) {
+      this.exerciseBaselines.set(lessonKey, events.filter(item => item.state !== 'scheduled').map(item => item.id));
+      if (this.exerciseBaselines.size > 200) this.exerciseBaselines.delete(this.exerciseBaselines.keys().next().value);
+      this.persist();
+    }
+    const baseline = this.exerciseBaselines.get(lessonKey);
+    for (const event of events) {
+      if (!baseline.includes(event.id)) await this.deliver(event, `${lessonKey}:exercise:${event.id}`, valid);
+    }
+    return events;
+  }
+
   check({ refresh = false } = {}) {
     const epoch = this.epoch;
     if (this.suspended) return Promise.resolve();
@@ -280,9 +339,11 @@ class Monitor extends EventEmitter {
         const { schedule, manualLesson } = this.state;
         this.state.lessons = selectLessons(manualLesson ? [...schedule, manualLesson] : schedule, this.config, this.now());
         const activities = [];
+        let exerciseError = '';
         for (const lesson of this.state.lessons) {
           this.state.checkingLesson = lesson;
           this.publish();
+          const lessonKey = [this.state.scope, lesson.courseNo, lesson.courseSeq, lesson.id].join(':');
           const response = await this.api.list(lesson); valid();
           fetchedFromSchool = true;
           if (response.scope !== this.state.scope) { this.state.lastSchedule = null; throw new MonitorError('auth', '登录账号或学期已变化，请重新开始监控'); }
@@ -295,21 +356,18 @@ class Monitor extends EventEmitter {
             }
             const event = { ...item, ...status, lessonId: lesson.id, courseTitle: lesson.title, url: `${lessonUrl(lesson)}/${item.id}/${item.type}` };
             activities.push(event);
-            const key = [this.state.scope, lesson.courseNo, lesson.courseSeq, lesson.id, item.id].join(':');
-            if (status.state !== 'active' || !this.state.running) continue;
-            let record = this.records.find(x => x.key === key);
-            if (record?.delivery === 'emitted') continue;
-            if (!record) {
-              record = { ...event, key, scope: this.state.scope, detectedAt: this.now(), delivery: 'pending' };
-              this.records.push(record); this.persist();
-            }
-            await this.notify(record, this.config); valid();
-            record.delivery = 'emitted'; record.notifiedAt = this.now(); this.persist();
+            await this.deliver(event, `${lessonKey}:${item.id}`, valid);
           }
           this.state.lastSigninCheck = this.now();
           this.state.lastSigninLesson = lesson;
+          try { activities.push(...await this.checkExercises(lesson, lessonKey, valid)); }
+          catch (error) {
+            if (['auth', 'cancelled', 'storage', 'rate-limit'].includes(error.kind)) throw error;
+            exerciseError = error instanceof MonitorError ? error.message : '课堂练习暂时无法检查，将在下次监控时重试';
+            activities.push(...this.state.activities.filter(item => item.kind === 'exercise' && item.lessonId === lesson.id));
+          }
         }
-        valid(); this.state.activities = activities; if (fetchedFromSchool) this.state.lastChecked = this.now(); this.state.error = ''; this.state.failures = 0;
+        valid(); this.state.activities = activities; this.state.exerciseError = exerciseError; if (fetchedFromSchool) this.state.lastChecked = this.now(); this.state.error = ''; this.state.failures = 0;
         this.state.phase = this.state.running ? this.state.lessons.length ? 'watching' : 'waiting' : 'ready';
       } catch (error) {
         if (error.kind === 'cancelled' || epoch !== this.epoch && (error.kind !== 'auth' || this.state.phase !== 'login-required')) return;
@@ -332,4 +390,4 @@ class Monitor extends EventEmitter {
     return this.inflight;
   }
 }
-module.exports = { ORIGIN, DEFAULTS, MonitorError, parseCourseUrl, validateConfig, timeValue, normalizeSchedule, normalizeList, classifyDetail, selectLessons, lessonUrl, timetableLessonUrl, schoolSigninUrl, signinActivityUrl, Monitor };
+module.exports = { ORIGIN, DEFAULTS, MonitorError, parseCourseUrl, validateConfig, timeValue, normalizeSchedule, normalizeList, normalizeExercises, classifyDetail, selectLessons, lessonUrl, timetableLessonUrl, schoolSigninUrl, signinActivityUrl, Monitor };

@@ -24,10 +24,14 @@ function render(s) {
   renderHomework();
   $('demo-badge').hidden = $('demo-tools').hidden = !s.demo;
   const lesson = s.lessons[0];
-  $('course-title').textContent = lesson?.title || '全部课程签到';
+  $('course-title').textContent = lesson?.title || '全部课程活动';
   $('today-label').textContent = day(Date.now());
   $('error-banner').hidden = !s.error && !s.notificationWarning;
   $('error-text').textContent = s.error || s.notificationWarning || '';
+  $('exercise-error').textContent = s.exerciseError || '';
+  $('exercise-error').hidden = !s.exerciseError;
+  $('manage-login').hidden = s.demo;
+  $('today-login-saved').hidden = s.demo;
   $('last-checked').textContent = clock(s.lastChecked);
   $('status-pill').classList.toggle('is-running', s.running);
   const labels = { idle:'尚未开始监控', paused:'监控已暂停', ready:'已连接学校', waiting:'等待上课', watching:'正在监控', error:'检查遇到问题', 'login-required':'需要重新登录', sleeping:'电脑休眠中' };
@@ -38,7 +42,7 @@ function render(s) {
   let title, hint, icon = 'bell';
   if (s.phase==='login-required' || !s.connected) { title='先连接你的课堂';hint='在学校页面完成登录，再同步课表'; }
   else if (s.phase==='error') { title='暂时无法确认签到状态';hint=s.running?'连接恢复后会继续检查':'处理上方问题后重新开始';icon='circle-alert'; }
-  else if (active.length) { title=`${active.length} 个签到正在进行`;hint='打开学校页面查看并完成签到';icon='bell-ring'; }
+  else if (active.length) { title=`${active.length} 项课堂活动进行中`;hint='到学校页面参加签到或练习';icon='bell-ring'; }
   else if (!s.running) { title='准备好后，开始监控';hint='新签到出现时显示桌面提醒'; }
   else if (!s.lessons.length) { title='课前自动开始检查';hint=s.upcoming?'到监控时间后会自动切换到下一课次':'当前课表内没有待监控课次';icon='calendar-days'; }
   else { title='正在留意新签到';hint='发现进行中的签到后立即提醒'; }
@@ -53,6 +57,7 @@ function render(s) {
   if(s.phase==='error')$('connection-label').textContent='学校连接异常';
   document.querySelector('.connection-box').classList.toggle('connected',s.connected&&s.phase!=='error');
   $('login-label').textContent=s.connected?'学校账号':'登录学校';
+  $('login').setAttribute('aria-label', $('login-label').textContent);
   const selectableLessons = s.manualLesson ? [...s.schedule, s.manualLesson] : s.schedule;
   const key=JSON.stringify([s.config,selectableLessons]);
   if(key!==settingsKey){
@@ -65,15 +70,15 @@ function render(s) {
   if(newActivities!==activitiesKey){
     activitiesKey=newActivities;
     const statusLabels={active:'进行中',scheduled:'未开始',completed:'已参与',ended:'已结束'};
-    const rows=s.activities.map(item=>{const row=text('div','', 'activity-row');const copy=text('div','');copy.append(text('strong',item.title),text('small',item.courseTitle));row.append(copy,text('span',statusLabels[item.state],`activity-state ${item.state}`));return row;});
-    if(!rows.length)rows.push(text('p',s.connected?'当前没有进行中的签到':'登录并检查后显示签到活动','empty-inline'));
+    const rows=s.activities.map(item=>{const row=text('div','', 'activity-row');const copy=text('div','');copy.append(text('strong',item.title),text('small',item.courseTitle + ' · ' + (item.kind === 'exercise' ? '练习' : '签到')));row.append(copy,text('span',statusLabels[item.state],`activity-state ${item.state}`));return row;});
+    if(!rows.length)rows.push(text('p',s.connected?'当前没有进行中的签到或练习':'登录并检查后显示课堂活动','empty-inline'));
     $('activities').replaceChildren(...rows);
-  } else if(!s.activities.length){$('activities').firstElementChild.textContent=s.connected?(s.lessons.length?'当前没有进行中的签到':'进入监控时段后检查签到'):'登录并检查后显示签到活动';}
+  } else if(!s.activities.length){$('activities').firstElementChild.textContent=s.connected?(s.lessons.length?'当前没有进行中的签到或练习':'进入监控时段后检查课堂活动'):'登录并检查后显示课堂活动';}
   const newHistory=JSON.stringify(s.history);
   if(newHistory!==historyKey){
     historyKey=newHistory;$('history-count').textContent=`${s.history.length} 条`;
-    if(s.history.length){const rows=s.history.map(item=>{const row=text('div','', 'history-row');const copy=text('div','');copy.append(text('strong',item.title),text('small',`${day(item.detectedAt)} ${clock(item.detectedAt)} · ${item.delivery==='emitted'?'已发出提醒':'等待发送'}`));const button=text('button','打开签到','text-button');button.addEventListener('click',()=>perform('open-school',item.key));row.append(copy,button);return row;});$('history').replaceChildren(...rows);}
-    else{const empty=text('div','', 'history-empty');const icon=document.createElement('img');icon.src='../assets/bell-ring.svg';icon.alt='';empty.append(icon,text('p','新签到出现后，提醒会记录在这里'));$('history').replaceChildren(empty);}
+    if(s.history.length){const rows=s.history.map(item=>{const row=text('div','', 'history-row');const copy=text('div','');copy.append(text('strong',item.title),text('small',`${day(item.detectedAt)} ${clock(item.detectedAt)} · ${item.delivery==='emitted'?'已发出提醒':'等待发送'}`));const button=text('button',item.kind === 'exercise' ? '打开练习' : '打开签到','text-button');button.addEventListener('click',()=>perform('open-school',item.key));row.append(copy,button);return row;});$('history').replaceChildren(...rows);}
+    else{const empty=text('div','', 'history-empty');const icon=document.createElement('img');icon.src='../assets/bell-ring.svg';icon.alt='';empty.append(icon,text('p','新签到或练习的提醒会记录在这里'));$('history').replaceChildren(empty);}
   }
   tick();
 }
@@ -89,6 +94,43 @@ function updateMode(){$('lesson-field').hidden=$('mode').value!=='manual';$('mod
 $('mode').addEventListener('change',updateMode);
 $('toggle').addEventListener('click',()=>perform(state.running||state.homework?.running?'pause':'start'));
 $('login').addEventListener('click',()=>perform('login'));
+const accountDialog = $('school-account-dialog');
+const accountForm = $('school-account-form');
+let credentialsSaved = false;
+async function manageCredentials(action, payload) {
+  const controls = ['school-account-fill', 'school-account-clear', 'school-account-save'].map($);
+  controls.forEach(button => { button.disabled = true; });
+  try {
+    const result = await window.reminder.invoke(action, payload);
+    if (!result.ok) throw new Error(result.message);
+    credentialsSaved = result.saved === true;
+    if (action === 'login-fill') accountDialog.close();
+    $('school-account-status').textContent = credentialsSaved ? '已保存一个学校账号' : '本机尚未保存账号';
+  } catch (error) {
+    $('school-account-status').textContent = error.message || '本机账号操作失败，请重试';
+  } finally {
+    controls[0].disabled = controls[1].disabled = !credentialsSaved;
+    controls[2].disabled = false;
+  }
+}
+function openAccountDialog() {
+  $('school-account-status').textContent = '正在检查本机记录';
+  accountDialog.showModal();
+  void manageCredentials('credentials-status');
+}
+$('manage-login').addEventListener('click', openAccountDialog);
+$('today-login-saved').addEventListener('click', openAccountDialog);
+$('school-account-close').addEventListener('click', () => accountDialog.close());
+accountDialog.addEventListener('close', () => accountForm.reset());
+accountForm.addEventListener('submit', event => {
+  event.preventDefault();
+  if ($('school-account-save').disabled) return;
+  const payload = { account: $('school-account-name').value, password: $('school-account-password').value };
+  accountForm.reset();
+  void manageCredentials('credentials-save', payload);
+});
+$('school-account-fill').addEventListener('click', () => void manageCredentials('login-fill'));
+$('school-account-clear').addEventListener('click', () => void manageCredentials('credentials-clear'));
 // Opening a card stays available while the timetable is syncing.
 $('campus-card-open').addEventListener('click', async () => {
   const button = $('campus-card-open');

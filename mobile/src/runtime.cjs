@@ -62,8 +62,9 @@ const api = {
     if(loggingOut)throw new MonitorError('auth','正在退出学校');
     const epoch=sessionEpoch;
     let result = await NativeSchool.request({ path, method, params });
-    if(result.error==='auth' && epoch===sessionEpoch && await recoverSchool() && epoch===sessionEpoch)result=await NativeSchool.request({path,method,params});
+    if(['auth', 'session-pending'].includes(result.error) && epoch===sessionEpoch && await recoverSchool() && epoch===sessionEpoch)result=await NativeSchool.request({path,method,params});
     if(epoch!==sessionEpoch)throw new MonitorError('auth','学校账号已退出，请重新登录');
+    if (result.error === 'session-pending') result = { error: 'network' };
     if (result.error) {
       if (result.error === 'auth') emitSession(null);
       const messages = { auth: '请在学校窗口完成登录', network: '学校连接暂时中断，请稍后重试', 'rate-limit': '学校暂时限制查询频率，请稍后重试', protocol: '学校返回的数据无法识别' };
@@ -80,6 +81,11 @@ const api = {
   homeworkDetail(item) {
     const { courseNo, courseSeq, weekTime, week, section, continunity, weekTimeId } = item;
     return this.request('/student/getWeekTimePaper', 'POST', { courseNo, courseSeq, weekTime, week, section, continunity, weekTimeId });
+  },
+  exercises(lesson) {
+    return this.request('/student/exercise/getExerciseList', 'POST', {
+      courseId: lesson.courseId, courseNo: lesson.courseNo, courseSeq: lesson.courseSeq, weekTimeId: lesson.id
+    });
   },
   list(lesson) { return this.request('/student/signIn/getStuSignInList', 'POST', { weekTimeId: lesson.id }); },
   detail(item) { return this.request(item.type === 3 ? '/student/signIn/getOnlineSignInInfo' : '/student/signIn/getSignInInfo', 'POST', { signInId: item.id }); },
@@ -99,9 +105,9 @@ async function notify(record) {
   if (record.event?.startsWith('due:') && planned[record.key]?.at <= Date.now()) return;
   await LocalNotifications.schedule({ notifications: [{
     id: notificationId(record.key || record.title + Date.now()),
-    title: record.kind === 'campus' ? '校园通知' : record.courseTitle || '东财课历',
+    title: record.kind === 'campus' ? '校园通知' : record.kind === 'exercise' ? `${record.courseTitle} · 课堂练习` : record.courseTitle || '东财课历',
     body: record.title,
-    extra: { kind: record.kind || 'signin' }
+    extra: { kind: record.kind || 'signin', recordKey: record.key }
   }] });
 }
 
@@ -202,9 +208,13 @@ const ready = (async () => {
     else if (!document.getElementById('today-panel').hidden) await App.minimizeApp();
     else document.getElementById('tab-today').click();
   });
-  await LocalNotifications.addListener('localNotificationActionPerformed', event => {
+  await LocalNotifications.addListener('localNotificationActionPerformed', async event => {
     if (event.notification.extra?.kind === 'campus') for (const listener of openCampusListeners) listener();
-    else document.getElementById('tab-homework').click();
+    else if (['signin', 'exercise'].includes(event.notification.extra?.kind)) {
+      document.getElementById('tab-signin').click();
+      const key = event.notification.extra.recordKey;
+      if (key) { try { await api.open(schoolSigninUrl(monitor, key)); } catch { /* The activity may belong to an earlier account. */ } }
+    } else document.getElementById('tab-homework').click();
   });
   setInterval(checkCampus, 60000);
   void refresh();
@@ -214,6 +224,14 @@ async function invoke(action, payload) {
   try {
     if (action === 'open-campus-card') { await NativeSchool.openCampusCard(); return { ok: true }; }
     await ready;
+    if (action === 'credentials-status') return { ok: true, ...await NativeSchool.credentialsStatus() };
+    if (loggingOut && ['credentials-save', 'credentials-clear', 'login-fill'].includes(action)) throw new Error('正在退出学校，请稍后重试');
+    if (action === 'credentials-save') { await NativeSchool.saveCredentials(payload); return { ok: true, saved: true }; }
+    if (action === 'credentials-clear') { await NativeSchool.clearCredentials(); return { ok: true, saved: false }; }
+    if (action === 'login-fill') {
+      await NativeSchool.open({ url: ORIGIN + '/', fillSaved: true });
+      return { ok: true, saved: true };
+    }
     if (action === 'campus-session') return { ok: true, data: campus.snapshot() };
     if (action === 'term-timetable') return { ok: true, data: await monitor.termTimetable(payload === true) };
     if (action === 'week-timetable') return { ok: true, data: await monitor.weekTimetable(payload?.week, payload?.refresh === true) };

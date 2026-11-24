@@ -189,7 +189,7 @@ const env = Object.fromEntries(Object.entries(process.env).filter(([key])=>key!=
   await page.screenshot({path:path.join(output,'桌面-监控中.png'),fullPage:true,animations:"disabled"});checks.push('启动、连接、开始监控');
   await page.getByRole('button',{name:'模拟发起签到',exact:true}).click();
   await expect(page.locator('#history-count')).toHaveText('1 条');
-  await expect(page.locator('#watch-title')).toHaveText('1 个签到正在进行');
+  await expect(page.locator('#watch-title')).toHaveText('1 项课堂活动进行中');
   await page.getByRole('button',{name:'同步课表并检查',exact:true}).click();
   await expect(page.locator('#history-count')).toHaveText('1 条');
   await page.screenshot({path:path.join(output,'桌面-签到提醒.png'),fullPage:true,animations:"disabled"});checks.push('新签到提醒和重复查询去重');

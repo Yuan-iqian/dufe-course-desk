@@ -27,6 +27,7 @@
       <div class="header-actions">
         <button id="support-open" class="btn btn-light" type="button" title="查看赞赏码" aria-label="查看赞赏码" aria-haspopup="dialog" aria-controls="support-dialog"><span class="support-icon" aria-hidden="true"></span></button>
         <button id="theme-open" class="btn btn-light" type="button" aria-label="切换主题" aria-haspopup="dialog"><img src="../assets/palette.svg" width="20" height="20" alt=""><span>主题</span></button>
+        <button id="manage-login" class="btn btn-light" hidden type="button" title="本机账号设置" aria-label="本机账号设置" aria-haspopup="dialog"><img src="../assets/settings-2.svg" width="20" height="20" alt=""></button>
         <button id="login" class="btn btn-light"><img src="../assets/log-in.svg" alt=""><span id="login-label">登录学校</span></button>
       </div>
     </header>
@@ -35,7 +36,7 @@
         <button id="tab-today" class="view-tab selected" aria-pressed="true"><img src="../assets/layout-dashboard.svg" width="20" height="20" alt="" aria-hidden="true"><span>今天</span></button>
         <button id="tab-timetable" class="view-tab" aria-pressed="false"><img src="../assets/calendar-days.svg" width="20" height="20" alt="" aria-hidden="true"><span>课程表</span></button>
         <button id="tab-homework" class="view-tab" aria-pressed="false"><img src="../assets/book-open.svg" width="20" height="20" alt="" aria-hidden="true"><span>作业汇总</span></button>
-        <button id="tab-signin" class="view-tab" aria-pressed="false"><img src="../assets/bell-ring.svg" width="20" height="20" alt="" aria-hidden="true"><span>课堂签到</span></button>
+        <button id="tab-signin" class="view-tab" aria-pressed="false"><img src="../assets/bell-ring.svg" width="20" height="20" alt="" aria-hidden="true"><span>课堂活动</span></button>
         <button id="tab-campus" class="view-tab" aria-pressed="false"><img src="../assets/megaphone.svg" width="20" height="20" alt="" aria-hidden="true"><span>校园通知</span></button>
       </nav>
       <div class="app-content">
@@ -76,7 +77,7 @@
               </section>
               <section class="today-monitor" aria-labelledby="today-monitor-heading">
                 <div class="today-monitor-head">
-                  <h3 id="today-monitor-heading"><img src="../assets/bell.svg" alt="">签到监控</h3>
+                  <h3 id="today-monitor-heading"><img src="../assets/bell.svg" alt="">课堂活动监控</h3>
                   <span id="today-status" class="status-pill" role="status"><span class="status-dot"></span><span id="today-status-label">尚未同步</span></span>
                 </div>
                 <p id="today-monitor-target"></p>
@@ -86,7 +87,7 @@
                 </dl>
                 <div class="today-monitor-actions">
                   <button id="today-monitor-toggle" type="button" class="btn btn-primary">开始监控</button>
-                  <button id="today-signin" type="button" class="btn btn-light">签到详情</button>
+                  <button id="today-signin" type="button" class="btn btn-light">活动详情</button>
                 </div>
               </section>
             </div>
@@ -94,6 +95,7 @@
               <h3 id="today-sync-heading">同步状态</h3>
               <div id="today-sync-auth" class="today-sync-auth" hidden>
                 <p role="status">学校登录已失效</p>
+                <button id="today-login-saved" type="button" class="btn btn-light" hidden>使用已保存账号</button>
                 <button id="today-relogin" type="button" class="btn btn-light">重新登录</button>
               </div>
               <div class="today-sync-grid">
@@ -149,21 +151,21 @@
             <p class="homework-note">汇总学校作业列表中的全部课程 · 每 5 分钟同步 · 截止前 24 小时和 1 小时提醒</p>
             <details class="homework-history"><summary>作业提醒记录</summary><div id="homework-history-list"></div></details>
           </section>
-          <section id="demo-tools" class="demo-tools" aria-label="模拟场景" hidden><span>以下数据仅用于测试</span><button class="btn btn-light" data-scenario="new">模拟发起签到</button><button class="btn btn-light" data-scenario="ended">结束签到</button><button class="btn btn-light" data-scenario="offline">断网</button><button class="btn btn-light" data-scenario="expired">登录过期</button><button class="btn btn-light" data-scenario="empty">恢复正常</button></section>
+          <section id="demo-tools" class="demo-tools" aria-label="模拟场景" hidden><span>以下数据仅用于测试</span><button class="btn btn-light" data-scenario="new">模拟发起签到</button><button class="btn btn-light" data-scenario="exercise">模拟发布练习</button><button class="btn btn-light" data-scenario="ended">结束签到</button><button class="btn btn-light" data-scenario="offline">断网</button><button class="btn btn-light" data-scenario="expired">登录过期</button><button class="btn btn-light" data-scenario="empty">恢复正常</button></section>
           <section id="signin-panel" aria-labelledby="signin-heading" hidden>
-            <div class="page-heading"><h2 id="signin-heading">课堂签到</h2></div>
+            <div class="page-heading"><h2 id="signin-heading">课堂活动</h2></div>
             <div class="workspace">
             <div class="main-column">
               <section class="monitor-panel" aria-labelledby="course-title">
                 <div class="monitor-top"><span id="status-pill" class="status-pill"><span class="status-dot"></span><span id="status-label">尚未开始监控</span></span><span id="today-label" class="muted"></span></div>
-                <h2 id="course-title">全部课程签到</h2>
+                <h2 id="course-title">全部课程活动</h2>
                 <p id="lesson-label" class="lesson-line">登录后同步课表</p>
                 <div class="watch-status"><div class="watch-symbol"><img id="watch-icon" src="../assets/bell.svg" alt=""></div><div><h3 id="watch-title">先连接你的课堂</h3><p id="watch-description">在学校页面完成登录，再同步课表</p></div></div>
                 <div class="main-actions"><button id="toggle" class="btn btn-primary"><img id="toggle-icon" src="../assets/play.svg" alt=""><span id="toggle-label">开始监控</span></button><button id="open-school" class="btn btn-outline-secondary"><img src="../assets/external-link.svg" alt="">打开学校页面</button></div>
                 <div class="check-strip"><span>上次成功检查 <strong id="last-checked">尚未检查</strong></span><span id="next-check" aria-hidden="true"></span></div>
               </section>
-              <section class="activity-section" aria-labelledby="activities-title"><div class="section-heading"><h2 id="activities-title">当前签到</h2><button id="refresh" class="btn btn-light"><img src="../assets/refresh-cw.svg" alt=""><span id="refresh-label">同步课表并检查</span></button></div><div id="activities" class="activity-list"><p class="empty-inline">登录并检查后显示签到活动</p></div></section>
-              <section class="history-section" aria-labelledby="history-title"><div class="section-heading"><h2 id="history-title">提醒记录</h2><span id="history-count" class="muted">0 条</span></div><div id="history"><div class="history-empty"><img src="../assets/bell-ring.svg" alt=""><p>新签到出现后，提醒会记录在这里</p></div></div></section>
+              <section class="activity-section" aria-labelledby="activities-title"><div class="section-heading"><h2 id="activities-title">当前签到与练习</h2><button id="refresh" class="btn btn-light"><img src="../assets/refresh-cw.svg" alt=""><span id="refresh-label">同步课表并检查</span></button></div><p id="exercise-error" class="field-error" role="status" hidden></p><div id="activities" class="activity-list"><p class="empty-inline">登录并检查后显示课堂活动</p></div></section>
+              <section class="history-section" aria-labelledby="history-title"><div class="section-heading"><h2 id="history-title">提醒记录</h2><span id="history-count" class="muted">0 条</span></div><div id="history"><div class="history-empty"><img src="../assets/bell-ring.svg" alt=""><p>新签到或练习的提醒会记录在这里</p></div></div></section>
             </div>
             <aside class="settings-panel" aria-labelledby="settings-title">
               <div class="section-heading"><h2 id="settings-title">监控设置</h2><img src="../assets/settings-2.svg" class="icon" alt=""></div>
@@ -247,6 +249,25 @@
         <span class="theme-option-name"><input name="background" type="radio" value="snow">东财雪景</span>
       </label>
     </fieldset>
+  </dialog>
+  <dialog id="school-account-dialog" class="cp-dialog school-account-dialog" aria-labelledby="school-account-title">
+    <div class="cp-dialog-head">
+      <h2 id="school-account-title">本机学校账号</h2>
+      <button id="school-account-close" class="btn btn-light" type="button" autofocus>关闭</button>
+    </div>
+    <p id="school-account-status" class="muted" role="status"></p>
+    <div class="school-account-actions">
+      <button id="school-account-fill" class="btn btn-primary" type="button" disabled>打开学校并一键填写</button>
+      <button id="school-account-clear" class="btn btn-outline-secondary" type="button" disabled>清除已保存账号</button>
+    </div>
+    <form id="school-account-form">
+      <p class="field-hint">系统会加密保存到本机。填入学校页面后，由你确认登录。</p>
+      <label class="form-label" for="school-account-name">学校账号</label>
+      <input id="school-account-name" class="form-control" type="text" maxlength="128" autocomplete="off" autocapitalize="none" spellcheck="false" required>
+      <label class="form-label" for="school-account-password">学校密码</label>
+      <input id="school-account-password" class="form-control" type="password" maxlength="256" autocomplete="off" required>
+      <button id="school-account-save" class="btn btn-outline-secondary" type="submit">保存到本机</button>
+    </form>
   </dialog>
   <dialog id="support-dialog" class="cp-dialog support-dialog" aria-labelledby="support-heading" aria-describedby="support-help">
     <div class="cp-dialog-head">

@@ -4,6 +4,7 @@ const { ORIGIN, MonitorError } = require('./core.cjs');
 function isSchoolUrl(value) {
   try { const u = new URL(value); return u.protocol === 'https:' && (u.hostname === 'dufe.edu.cn' || u.hostname.endsWith('.dufe.edu.cn')) && !u.username && !u.password; } catch { return false; }
 }
+const { loginFormScript } = require('./shared/school-login-form.cjs');
 const { ALLOWED_REQUESTS, requestScript } = require('./shared/school-protocol.cjs');
 const { loadTimetable, loadTermTimetable, loadWeekTimetable } = require('./shared/timetable.cjs');
 function bounded(promise, milliseconds = 20000) {
@@ -35,7 +36,7 @@ class SchoolApi {
       w.on('close', event => { if (!this.quitting) { event.preventDefault(); w.hide(); } });
       w.webContents.on('did-stop-loading', () => { if (this.loginRequested && w.webContents.getURL().startsWith(ORIGIN + '/')) this.onLogin?.(); });
       this.opening = w.loadURL(url).catch(() => { throw new MonitorError('network', '学校页面暂时无法打开，请检查网络'); }).finally(() => { this.opening = null; });
-    } else if (show && this.window.webContents.getURL() !== url && !this.window.webContents.getURL().includes('sso.dufe.edu.cn')) {
+    } else if (show && this.window.webContents.getURL() !== url && !this.window.webContents.getURL().startsWith('https://sso.dufe.edu.cn/')) {
       this.opening = this.window.loadURL(url).catch(() => { throw new MonitorError('network', '学校页面暂时无法打开'); }).finally(() => { this.opening = null; });
     }
     if (show) { this.loginRequested = true; this.window.show(); this.window.focus(); }
@@ -45,9 +46,10 @@ class SchoolApi {
     if (!Object.hasOwn(ALLOWED_REQUESTS, path) || ALLOWED_REQUESTS[path] !== method) throw new MonitorError('input', '不支持的读取操作');
     const generation=this.generation;
     let result=await this.read(path,method,params);
-    if(result?.error==='auth' && generation===this.generation && await this.recoverLogin() && generation===this.generation)result=await this.read(path,method,params);
+    if(['auth', 'session-pending'].includes(result?.error) && generation===this.generation && await this.recoverLogin() && generation===this.generation)result=await this.read(path,method,params);
     if(generation!==this.generation)throw new MonitorError('auth','学校账号已退出，请重新登录');
     const errors = { auth: '登录已过期或尚未登录，请点击“登录学校”', network: '无法连接学校服务器，将自动重试', 'rate-limit': '学校暂时限制了查询频率，已降低检查频率', protocol: '学校返回的数据无法识别，请打开学校页面核对' };
+    if (result?.error === 'session-pending') result = { error: 'network' };
     if (result?.error) {
       if (result.error === 'auth') this.onSession?.(null);
       throw new MonitorError(result.error, errors[result.error] || errors.protocol);
@@ -64,11 +66,39 @@ class SchoolApi {
       try { await bounded(new Promise(resolve => { onStopped = resolve; contents.once('did-stop-loading', onStopped); })); }
       finally { contents.removeListener('did-stop-loading', onStopped); }
     }
-    if (new URL(this.window.webContents.getURL()).origin !== ORIGIN) return {error:'auth'};
     let result;
-    try { result = await bounded(this.window.webContents.executeJavaScript(requestScript(path, method, params))); }
+    try {
+      const page = new URL(contents.getURL());
+      if (page.origin !== ORIGIN) {
+        const loginPage = page.origin === 'https://sso.dufe.edu.cn' &&
+          page.pathname === '/auth/oauth/authorize' &&
+          await bounded(contents.executeJavaScript(loginFormScript()));
+        return { error: loginPage ? 'auth' : 'network' };
+      }
+      result = await bounded(contents.executeJavaScript(requestScript(path, method, params)));
+    }
     catch { throw new MonitorError('network', '学校页面正在切换或连接中断，请稍后重试'); }
     return result;
+  }
+  async fillLogin(credentials, stillAuthorized) {
+    await this.open(ORIGIN + '/');
+    for (let attempt = 0; attempt < 24; attempt++) {
+      const window = this.window;
+      if (!stillAuthorized() || !window || window.isDestroyed() || !window.isVisible()) break;
+      const contents = window.webContents;
+      const url = contents.getURL();
+      if (!contents.isLoadingMainFrame() && url.startsWith('https://sso.dufe.edu.cn/auth/oauth/authorize')) {
+        if (await bounded(contents.executeJavaScript(loginFormScript(credentials)), 2000).catch(() => false)) return true;
+      }
+      if (!contents.isLoadingMainFrame() && url.startsWith(ORIGIN + '/') && attempt >= 4) break;
+      await new Promise(resolve => setTimeout(resolve, 250));
+    }
+    return false;
+  }
+  exercises(lesson) {
+    return this.request('/student/exercise/getExerciseList', 'POST', {
+      courseId: lesson.courseId, courseNo: lesson.courseNo, courseSeq: lesson.courseSeq, weekTimeId: lesson.id
+    });
   }
   schedule(config) { return loadTimetable(this.request.bind(this), config); }
   termSchedule(validateScope) { return loadTermTimetable(this.request.bind(this), validateScope); }

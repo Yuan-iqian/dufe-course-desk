@@ -11,8 +11,8 @@ class DemoApi {
     const day = Math.floor((this.now() + 8 * 3600000) / 86400000);
     const firstMonday = (day - ((day + 3) % 7) - 7) * 86400000 - 8 * 3600000;
     const result = await this.result([{ dayList: [
-      { date: format.format(this.now()), courseList: [{ courseNo: '31090083', courseSeq: '01', courseName: '市场调查与分析', weekTimeId: 2128489, beginTime: '00:00', endTime: '23:59', address: '教学楼 A301' }] },
-      { date: format.format(this.now() + 86400000), courseList: [{ courseNo: '31090050', courseSeq: '01', courseName: '数理统计', weekTimeId: 2128490, beginTime: '09:00', endTime: '10:30', address: '教学楼 B204' }] }
+      { date: format.format(this.now()), courseList: [{ courseId: 810083, courseNo: '31090083', courseSeq: '01', courseName: '市场调查与分析', weekTimeId: 2128489, beginTime: '00:00', endTime: '23:59', address: '教学楼 A301' }] },
+      { date: format.format(this.now() + 86400000), courseList: [{ courseId: 810050, courseNo: '31090050', courseSeq: '01', courseName: '数理统计', weekTimeId: 2128490, beginTime: '09:00', endTime: '10:30', address: '教学楼 B204' }] }
     ] }]);
     return { ...result, calendar: { week: 2, weekCount: 4, firstMonday, loadedWeeks: [2, 3] } };
   }
@@ -39,7 +39,12 @@ class DemoApi {
     const start = term.firstMonday + (week - 1) * 7 * 86400000;
     return term.lessons.filter(lesson => lesson.start >= start && lesson.start < start + 7 * 86400000);
   }
-  async list() { return this.result(this.scenario === 'empty' ? null : [{ id: this.eventId, title: '课堂签到（模拟）', type: 2, signStatus: this.scenario === 'ended' ? '3' : '1' }]); }
+  async list() { return this.result(['empty', 'exercise'].includes(this.scenario) ? null : [{ id: this.eventId, title: '课堂签到（模拟）', type: 2, signStatus: this.scenario === 'ended' ? '3' : '1' }]); }
+  async exercises() {
+    return this.result(this.scenario === 'exercise'
+      ? [{ id: 91001, description: '抽样与样本量（模拟练习）', exerciseStatus: 1, studentExerciseStatus: 0 }]
+      : []);
+  }
   async detail() { return this.result({ signStatus: 0, signInModel: { status: 1, startTime: new Date(this.now()-60000).toISOString(), endTime: new Date(this.now()+10*60000).toISOString() } }); }
   async homeworkList() {
     const courses = ['数理统计','市场调查与分析','政治经济学','社会统计学'];

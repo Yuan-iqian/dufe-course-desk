@@ -18,6 +18,9 @@ public class SchoolSessionPlugin: CAPPlugin, CAPBridgedPlugin, WKNavigationDeleg
         CAPPluginMethod(name: "open", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "openCampusCard", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "closeCampusCard", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "credentialsStatus", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "saveCredentials", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "clearCredentials", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "reconnect", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "request", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "logout", returnType: CAPPluginReturnPromise),
@@ -29,9 +32,89 @@ public class SchoolSessionPlugin: CAPPlugin, CAPBridgedPlugin, WKNavigationDeleg
     private var sheet: UINavigationController?
     private var loaded = false
     private var reader = ""
+    private var loginForm = ""
+    private var credentialRevision = 0
     private var pending: [String: CAPPluginCall] = [:]
     private var campusCard: UINavigationController?
     private var clearing = false
+
+    private let credentialQuery: [String: Any] = [
+        kSecClass as String: kSecClassGenericPassword,
+        kSecAttrService as String: "cn.dufe.coursedesk.school-credentials",
+        kSecAttrAccount as String: "v1"
+    ]
+
+    private func readCredentials() -> (OSStatus, Data?) {
+        var query = credentialQuery
+        query[kSecMatchLimit as String] = kSecMatchLimitOne
+        query[kSecReturnData as String] = true
+        var value: CFTypeRef?
+        let status = SecItemCopyMatching(query as CFDictionary, &value)
+        return (status, value as? Data)
+    }
+
+    @objc public func credentialsStatus(_ call: CAPPluginCall) {
+        let (status, _) = readCredentials()
+        if status == errSecSuccess || status == errSecItemNotFound {
+            call.resolve(["saved": status == errSecSuccess])
+        } else { call.reject("无法读取本机账号，请解锁设备后重试") }
+    }
+
+    @objc public func saveCredentials(_ call: CAPPluginCall) {
+        let account = (call.getString("account") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let password = call.getString("password") ?? ""
+        guard !account.isEmpty, account.utf16.count <= 128, !password.isEmpty, password.utf16.count <= 256,
+              let data = try? JSONSerialization.data(withJSONObject: ["account": account, "password": password]) else {
+            call.reject("请输入学校账号和密码"); return
+        }
+        DispatchQueue.main.async {
+            let values = [kSecValueData as String: data]
+            var status = SecItemUpdate(self.credentialQuery as CFDictionary, values as CFDictionary)
+            if status == errSecItemNotFound {
+                var item = self.credentialQuery
+                item[kSecValueData as String] = data
+                item[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+                status = SecItemAdd(item as CFDictionary, nil)
+            }
+            if status == errSecSuccess { self.credentialRevision += 1; call.resolve() }
+            else { call.reject("系统加密保存失败，请解锁设备后重试") }
+        }
+    }
+
+    @objc public func clearCredentials(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            self.credentialRevision += 1
+            let status = SecItemDelete(self.credentialQuery as CFDictionary)
+            if status == errSecSuccess || status == errSecItemNotFound { call.resolve() }
+            else { call.reject("清除失败，请解锁设备后重试") }
+        }
+    }
+
+    private func onLoginPage(_ view: WKWebView?) -> Bool {
+        guard let url = view?.url else { return false }
+        return allowedSchool(url) && url.host == "sso.dufe.edu.cn" && url.path == "/auth/oauth/authorize"
+    }
+
+    private func fillSaved(_ call: CAPPluginCall, view: WKWebView, owner: UINavigationController, revision: Int, attempt: Int = 0) {
+        guard !clearing, view === school, owner === sheet, !owner.isBeingDismissed, revision == credentialRevision else {
+            call.reject("学校窗口已关闭或保存的账号已更新"); return
+        }
+        guard attempt < 32, !(loaded && exactSchool() && attempt >= 8) else {
+            call.reject("未找到学校账号登录表单，请核对学校页面"); return
+        }
+        let retry = { [weak self, weak view, weak owner] in
+            guard let self = self, let view = view, let owner = owner else { call.reject("学校窗口已关闭"); return }
+            self.fillSaved(call, view: view, owner: owner, revision: revision, attempt: attempt + 1)
+        }
+        guard loaded, onLoginPage(view) else {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25, execute: retry); return
+        }
+        guard let data = readCredentials().1 else { call.reject("无法读取已保存账号，请解锁设备或重新保存"); return }
+        view.evaluateJavaScript(loginForm + "(" + String(decoding: data, as: UTF8.self) + ")") { result, _ in
+            if result as? Bool == true { call.resolve() }
+            else { DispatchQueue.main.asyncAfter(deadline: .now() + 0.25, execute: retry) }
+        }
+    }
 
     @objc public func openCampusCard(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
@@ -89,6 +172,10 @@ public class SchoolSessionPlugin: CAPPlugin, CAPBridgedPlugin, WKNavigationDeleg
             throw NSError(domain: "CourseDesk", code: 1, userInfo: [NSLocalizedDescriptionKey: "学校读取组件缺失，请重新安装"])
         }
         reader = try String(contentsOf: file, encoding: .utf8)
+        guard let formFile = Bundle.main.url(forResource: "school-login-form", withExtension: "js", subdirectory: "public") else {
+            throw NSError(domain: "CourseDesk", code: 3, userInfo: [NSLocalizedDescriptionKey: "学校登录组件缺失，请重新安装"])
+        }
+        loginForm = try String(contentsOf: formFile, encoding: .utf8)
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = .default()
         configuration.userContentController.add(self, name: "CourseSchoolResult")
@@ -107,7 +194,13 @@ public class SchoolSessionPlugin: CAPPlugin, CAPBridgedPlugin, WKNavigationDeleg
         DispatchQueue.main.async {
             do {
                 try self.ensureSchool()
-                if self.sheet != nil { call.resolve(); return }
+                let fill = call.getBool("fillSaved") == true
+                if fill && self.readCredentials().0 != errSecSuccess { call.reject("请先保存学校账号或解锁设备"); return }
+                if let sheet = self.sheet, let school = self.school {
+                    if fill { self.fillSaved(call, view: school, owner: sheet, revision: self.credentialRevision) }
+                    else { call.resolve() }
+                    return
+                }
                 guard let school = self.school, let presenter = self.bridge?.viewController else { call.reject("无法打开学校窗口"); return }
                 school.removeFromSuperview()
                 let page = UIViewController()
@@ -133,7 +226,13 @@ public class SchoolSessionPlugin: CAPPlugin, CAPBridgedPlugin, WKNavigationDeleg
                         school.load(URLRequest(url: url))
                     }
                 }
-                call.resolve()
+                if fill {
+                    if !self.onLoginPage(school) && self.loaded {
+                        self.loaded = false
+                        school.load(URLRequest(url: URL(string: self.origin + "/")!))
+                    }
+                    self.fillSaved(call, view: school, owner: navigation, revision: self.credentialRevision)
+                } else { call.resolve() }
             } catch { call.reject(error.localizedDescription) }
         }
     }
@@ -145,7 +244,7 @@ public class SchoolSessionPlugin: CAPPlugin, CAPBridgedPlugin, WKNavigationDeleg
         notifyListeners("schoolPageReady", data: [:])
     }
     private func allowedRequest(_ path: String, _ method: String) -> Bool {
-        let methods = ["/student/currentDate": "GET", "/student/queryCourseList": "GET", "/student/HomeworkList": "GET", "/student/signIn/getStuSignInList": "POST", "/student/signIn/getSignInInfo": "POST", "/student/signIn/getOnlineSignInInfo": "POST", "/student/getWeekTimePaper": "POST"]
+        let methods = ["/student/currentDate": "GET", "/student/queryCourseList": "GET", "/student/HomeworkList": "GET", "/student/signIn/getStuSignInList": "POST", "/student/signIn/getSignInInfo": "POST", "/student/signIn/getOnlineSignInInfo": "POST", "/student/getWeekTimePaper": "POST", "/student/exercise/getExerciseList": "POST"]
         return methods[path] == method
     }
     @objc public func request(_ call: CAPPluginCall) {
@@ -166,7 +265,14 @@ public class SchoolSessionPlugin: CAPPlugin, CAPBridgedPlugin, WKNavigationDeleg
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in self?.runRequest(id, call) }
             return
         }
-        guard exactSchool() else { pending.removeValue(forKey: id)?.resolve(["error": "auth"]); return }
+        guard exactSchool() else {
+            if onLoginPage(school) {
+                school?.evaluateJavaScript(loginForm + "(null)") { [weak self] result, _ in
+                    self?.pending.removeValue(forKey: id)?.resolve(["error": (result as? Bool == true) ? "auth" : "network"])
+                }
+            } else { pending.removeValue(forKey: id)?.resolve(["error": "network"]) }
+            return
+        }
         do {
             let arguments: [String: Any] = ["path": call.getString("path") ?? "", "method": call.getString("method") ?? "", "params": call.getObject("params") ?? [:]]
             let bytes = try JSONSerialization.data(withJSONObject: arguments)
